@@ -54,6 +54,7 @@
 
 pub mod error;
 pub mod indicators;
+pub mod kernels;
 pub mod traits;
 
 // Re-export commonly used types at crate root
