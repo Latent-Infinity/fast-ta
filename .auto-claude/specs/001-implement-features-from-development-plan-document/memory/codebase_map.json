@@ -99,7 +99,22 @@
       "description": "DAG builder using petgraph for indicator dependency resolution. DagBuilder constructs dependency graphs from Registry, performs topological sort via build() to produce ExecutionPlan. ExecutionPlan provides execution_order(), dependencies(), dependents(), roots(), leaves() methods. Handles cycle detection returning CyclicDependency error. Edge direction: dependency -> dependent (dep must be computed first). Key pattern: DagBuilder::from_registry(&registry).build() returns Result<ExecutionPlan>.",
       "category": "architecture",
       "discovered_at": "2025-12-20T22:36:12.720286+00:00"
+    },
+    "crates/fast-ta-experiments/benches/e05_plan_overhead.rs": {
+      "description": "E05 plan overhead benchmarks measuring plan infrastructure cost. Key benchmarks: registry registration (O(1) per indicator), DAG construction (O(V+E) with petgraph), topological sort (O(V+E)), full plan compilation, plan reuse (cached access ~0 overhead). Break-even analysis compares direct indicator computation vs plan compilation + execution. Includes create_realistic_registry() helper with 9 common trading indicators (SMA, EMA, RSI, ATR, MACD, Bollinger, Stochastic).",
+      "category": "benchmark",
+      "discovered_at": "2025-12-20T22:42:06.085539+00:00"
+    },
+    "crates/fast-ta-experiments/benches/e06_memory_writes.rs": {
+      "description": "E06 Memory Writes benchmarks comparing write-every-bar vs buffered write patterns. Includes 9 benchmark functions testing: allocating vs pre-allocated writes, buffered writes with various buffer sizes (64-4096), multi-output patterns (sequential vs interleaved), chunked processing, memory access patterns (sequential vs strided), throughput analysis, and allocation overhead. Uses chunked_sma helper for cache-friendly block processing. Success criteria: \u226510% speedup for buffered writes recommendation.",
+      "category": "benchmarks",
+      "discovered_at": "2025-12-20T22:47:56.112506+00:00"
+    },
+    "crates/fast-ta-core/src/plan/direct_mode.rs": {
+      "description": "Direct mode multi-indicator computation module. Provides DirectExecutor for computing indicators independently without plan overhead. Key types: IndicatorRequest (request builder with simple/bollinger/macd/stochastic constructors), IndicatorResult enum (Single/Macd/Bollinger/Stochastic variants), OhlcvData (OHLCV wrapper). Key functions: execute() for price series, execute_ohlcv() for OHLCV data, execute_all_baseline() computes all 7 indicators, compute_all_direct() convenience function. Serves as baseline for E07 comparison with plan mode.",
+      "category": "implementation",
+      "discovered_at": "2025-12-20T22:58:00.375346+00:00"
     }
   },
-  "last_updated": "2025-12-20T22:36:12.720295+00:00"
+  "last_updated": "2025-12-20T22:58:00.375356+00:00"
 }

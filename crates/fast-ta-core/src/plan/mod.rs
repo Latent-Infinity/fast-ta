@@ -7,16 +7,43 @@
 //! - Dependency resolution between indicators
 //! - DAG-based execution ordering
 //! - Potential fusion of compatible computations
+//! - Direct mode for independent indicator computation
 //!
 //! # Architecture
 //!
-//! The plan infrastructure consists of three main components:
+//! The plan infrastructure consists of four main components:
 //!
 //! 1. **IndicatorSpec**: Describes an indicator's parameters, dependencies, and outputs
 //! 2. **Registry**: Central storage for indicator specifications and factory functions
 //! 3. **DAG**: Dependency graph for resolving execution order
+//! 4. **DirectMode**: Independent indicator computation without plan overhead
 //!
-//! # Example
+//! # Execution Modes
+//!
+//! ## Direct Mode
+//!
+//! Direct mode computes each indicator independently without any optimization.
+//! This is useful for:
+//! - Small number of indicators
+//! - Benchmarking and comparison
+//! - Simple use cases without dependencies
+//!
+//! ```
+//! use fast_ta_core::plan::direct_mode::{DirectExecutor, IndicatorRequest};
+//! use fast_ta_core::plan::IndicatorKind;
+//!
+//! let prices: Vec<f64> = (0..100).map(|i| 100.0 + (i as f64) * 0.1).collect();
+//! let executor = DirectExecutor::new();
+//!
+//! let results = executor.execute(&prices, &[
+//!     IndicatorRequest::simple(IndicatorKind::Sma, 20),
+//!     IndicatorRequest::simple(IndicatorKind::Ema, 10),
+//! ]).unwrap();
+//! ```
+//!
+//! ## Plan Mode
+//!
+//! Plan mode uses DAG-based execution for optimized computation:
 //!
 //! ```
 //! use fast_ta_core::plan::{Registry, IndicatorSpec, IndicatorKind};
@@ -48,11 +75,17 @@
 //! - Shared computations are identified and computed once
 //! - Memory bandwidth is optimized through data locality
 //! - Fused kernels can be applied when applicable
+//!
+//! For small numbers of indicators, direct mode may be faster due to no plan overhead.
 
 pub mod dag;
+pub mod direct_mode;
 pub mod registry;
 pub mod spec;
 
 // Re-export commonly used types for convenient access
 pub use registry::Registry;
 pub use spec::{IndicatorKind, IndicatorSpec, OutputSpec};
+
+// Re-export direct mode types
+pub use direct_mode::{compute_all_direct, DirectExecutor, IndicatorRequest, IndicatorResult, OhlcvData};
