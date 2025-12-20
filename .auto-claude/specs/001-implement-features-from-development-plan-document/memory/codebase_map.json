@@ -14,7 +14,22 @@
       "description": "Error enum with variants: InsufficientData(required, actual), NumericConversion(context), CyclicDependency(node_id), EmptyInput, InvalidPeriod(period, reason). Implements Display and std::error::Error. Result<T> type alias for Result<T, Error>.",
       "category": "pattern",
       "discovered_at": "2025-12-20T21:12:18.640598+00:00"
+    },
+    "crates/fast-ta-core/src/indicators/sma.rs": {
+      "description": "SMA indicator implementation using O(n) rolling sum approach. Two functions provided: sma() which allocates a new output vector, and sma_into() which writes to a pre-allocated buffer. First (period-1) values are NaN. Comprehensive test suite with 30+ tests covering basic functionality, edge cases, error handling, and property-based tests.",
+      "category": "indicator",
+      "discovered_at": "2025-12-20T21:19:06.716342+00:00"
+    },
+    "crates/fast-ta-core/src/indicators/ema.rs": {
+      "description": "EMA indicator implementation with two smoothing variants: standard EMA (alpha = 2/(period+1)) and Wilder's smoothing (alpha = 1/period). Functions provided: ema(), ema_into(), ema_wilder(), ema_wilder_into(), ema_with_alpha(), ema_with_alpha_into(). Also includes period conversion utilities: wilder_to_standard_period() and standard_to_wilder_period(). SMA is used as the seed value for the first EMA calculation.",
+      "category": "indicator",
+      "discovered_at": "2025-12-20T21:23:45.181588+00:00"
+    },
+    "crates/fast-ta-core/src/indicators/rsi.rs": {
+      "description": "RSI indicator implementation using Wilder smoothing. Functions: rsi() and rsi_into(). First `period` values are NaN (need period+1 data points for first value). Boundary conditions: all gains \u2192 100, all losses \u2192 0, no movement \u2192 50. Uses Wilder's smoothing formula: new_avg = (prev_avg * (period-1) + current) / period.",
+      "category": "indicator",
+      "discovered_at": "2025-12-20T21:27:55.675755+00:00"
     }
   },
-  "last_updated": "2025-12-20T21:12:18.640606+00:00"
+  "last_updated": "2025-12-20T21:27:55.675769+00:00"
 }
