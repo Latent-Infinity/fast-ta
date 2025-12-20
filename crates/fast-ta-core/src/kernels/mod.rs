@@ -7,6 +7,7 @@
 //! # Kernels
 //!
 //! - [`running_stat`]: Welford's algorithm for numerically stable mean, variance, and standard deviation
+//! - [`ema_fusion`]: Fused computation of EMA-family indicators (EMA, DEMA, TEMA, MACD)
 //!
 //! # Performance
 //!
@@ -24,9 +25,14 @@
 //! All kernels use numerically stable algorithms (e.g., Welford's algorithm for
 //! variance) to handle extreme values and prevent catastrophic cancellation.
 
+pub mod ema_fusion;
 pub mod running_stat;
 
 // Re-export kernel types for convenient access
+pub use ema_fusion::{
+    ema_fusion, ema_fusion_into, ema_multi, ema_multi_into, macd_fusion, macd_fusion_into,
+    EmaFusionOutput, MacdFusionOutput,
+};
 pub use running_stat::{
     rolling_stats, rolling_stats_into, RollingStat, RollingStatOutput, RunningStat,
 };
