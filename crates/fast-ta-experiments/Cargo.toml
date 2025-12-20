@@ -17,3 +17,38 @@ serde_json = { workspace = true }
 
 [dev-dependencies]
 criterion = { workspace = true }
+
+# E01: Baseline cost benchmarks for all 7 indicators
+[[bench]]
+name = "e01_baseline"
+harness = false
+
+# E02: RunningStat fusion (Welford's algorithm) vs separate passes
+[[bench]]
+name = "e02_running_stat"
+harness = false
+
+# E03: EMA fusion (multiple EMA-family indicators in single pass)
+[[bench]]
+name = "e03_ema_fusion"
+harness = false
+
+# E04: Rolling extrema (monotonic deque O(n) vs naive O(n×k))
+[[bench]]
+name = "e04_rolling_extrema"
+harness = false
+
+# E05: Plan compilation overhead measurement
+[[bench]]
+name = "e05_plan_overhead"
+harness = false
+
+# E06: Memory write patterns (write-every-bar vs buffered)
+[[bench]]
+name = "e06_memory_writes"
+harness = false
+
+# E07: End-to-end workload (TA-Lib vs direct mode vs plan mode)
+[[bench]]
+name = "e07_end_to_end"
+harness = false
