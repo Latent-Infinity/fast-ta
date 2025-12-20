@@ -261,7 +261,7 @@ impl<T: SeriesElement> IndicatorResult<T> {
     pub fn len(&self) -> usize {
         match self {
             Self::Single(v) => v.len(),
-            Self::Macd(m) => m.line.len(),
+            Self::Macd(m) => m.macd_line.len(),
             Self::Bollinger(b) => b.middle.len(),
             Self::Stochastic(s) => s.k.len(),
         }
@@ -1190,8 +1190,8 @@ mod tests {
     #[test]
     fn test_indicator_result_macd_accessors() {
         let macd_output = MacdOutput {
-            line: vec![1.0, 2.0, 3.0],
-            signal: vec![0.5, 1.0, 1.5],
+            macd_line: vec![1.0, 2.0, 3.0],
+            signal_line: vec![0.5, 1.0, 1.5],
             histogram: vec![0.5, 1.0, 1.5],
         };
         let result: IndicatorResult<f64> = IndicatorResult::Macd(macd_output);
@@ -1201,7 +1201,7 @@ mod tests {
         assert!(result.as_macd().is_some());
 
         let macd = result.unwrap_macd();
-        assert_eq!(macd.line.len(), 3);
+        assert_eq!(macd.macd_line.len(), 3);
     }
 
     #[test]

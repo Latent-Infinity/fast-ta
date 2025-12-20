@@ -80,6 +80,7 @@
 
 pub mod dag;
 pub mod direct_mode;
+pub mod plan_mode;
 pub mod registry;
 pub mod spec;
 
@@ -89,3 +90,6 @@ pub use spec::{IndicatorKind, IndicatorSpec, OutputSpec};
 
 // Re-export direct mode types
 pub use direct_mode::{compute_all_direct, DirectExecutor, IndicatorRequest, IndicatorResult, OhlcvData};
+
+// Re-export plan mode types
+pub use plan_mode::{compute_all_plan, PlanExecutor};
