@@ -79,7 +79,27 @@
       "description": "Rolling Extrema kernel using monotonic deque for O(n) rolling max/min. Provides MonotonicDeque struct for tracking extrema, rolling_max(), rolling_min(), rolling_extrema() for computing both together, and naive O(n\u00d7k) versions for comparison. Tests verify fused == unfused output by comparing against naive scan approach.",
       "category": "kernel",
       "discovered_at": "2025-12-20T22:18:52.068006+00:00"
+    },
+    "crates/fast-ta-experiments/benches/e04_rolling_extrema.rs": {
+      "description": "E04 Rolling Extrema benchmarks comparing deque-based O(n) vs naive O(n\u00d7k) algorithms. Includes 12 benchmark functions: rolling_max/min (deque vs naive), fused extrema, period scaling (5-200), large period (100-1000), data size scaling, throughput, preallocated buffers, and stochastic use case (highest high + lowest low). Uses common utilities from mod common. Success criteria: \u22655\u00d7 speedup for deque-based approach at period \u226550.",
+      "category": "benchmark",
+      "discovered_at": "2025-12-20T22:24:36.360600+00:00"
+    },
+    "crates/fast-ta-core/src/plan/spec.rs": {
+      "description": "IndicatorSpec struct for describing indicator configurations. Contains IndicatorKind enum (17 variants for all indicator types), OutputSpec for outputs, period/multiplier/dependency tracking. Factory methods: new() for simple indicators, bollinger(period, multiplier), macd(fast, slow, signal), stochastic_fast/slow/full(). Builder methods: with_name(), with_dependency(), with_dependencies(). Helpers: config_key() for unique configuration identity, min_data_length() for minimum required data.",
+      "category": "architecture",
+      "discovered_at": "2025-12-20T22:31:16.613883+00:00"
+    },
+    "crates/fast-ta-core/src/plan/registry.rs": {
+      "description": "Registry struct for managing indicator specifications. Provides: register(id, spec), unregister(id), get(id), contains(id), len(), is_empty(). Config deduplication via config_index HashMap. Query methods: find_by_config(), find_by_kind(), validate_dependencies(). Iterator support: ids(), iter(), IntoIterator, FromIterator. Useful method: get_or_register() returns existing ID if equivalent config exists, or registers new spec.",
+      "category": "architecture",
+      "discovered_at": "2025-12-20T22:31:16.634519+00:00"
+    },
+    "crates/fast-ta-core/src/plan/dag.rs": {
+      "description": "DAG builder using petgraph for indicator dependency resolution. DagBuilder constructs dependency graphs from Registry, performs topological sort via build() to produce ExecutionPlan. ExecutionPlan provides execution_order(), dependencies(), dependents(), roots(), leaves() methods. Handles cycle detection returning CyclicDependency error. Edge direction: dependency -> dependent (dep must be computed first). Key pattern: DagBuilder::from_registry(&registry).build() returns Result<ExecutionPlan>.",
+      "category": "architecture",
+      "discovered_at": "2025-12-20T22:36:12.720286+00:00"
     }
   },
-  "last_updated": "2025-12-20T22:18:52.068015+00:00"
+  "last_updated": "2025-12-20T22:36:12.720295+00:00"
 }

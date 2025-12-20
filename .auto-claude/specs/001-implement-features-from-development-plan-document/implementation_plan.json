@@ -369,9 +369,9 @@
             "command": "cargo test --package fast-ta-core -- kernels::rolling_extrema",
             "expected": "All tests pass comparing against naive O(n\u00d7k) scan"
           },
-          "status": "in_progress",
-          "notes": "Implementing Rolling Extrema kernel using monotonic deque for O(n) rolling max/min",
-          "updated_at": "2025-12-20T22:15:09.594930+00:00"
+          "status": "completed",
+          "notes": "Implemented Rolling Extrema kernel using monotonic deque for O(n) rolling max/min. Created MonotonicDeque struct, rolling_max(), rolling_min(), rolling_extrema() functions with comprehensive tests comparing against naive O(n\u00d7k) scan.",
+          "updated_at": "2025-12-20T22:19:13.192337+00:00"
         },
         {
           "id": "subtask-2-7",
@@ -388,7 +388,9 @@
             "command": "cargo bench --package fast-ta-experiments --bench e04_rolling_extrema",
             "expected": "Benchmark completes with go/no-go decision showing \u22655\u00d7 speedup"
           },
-          "status": "pending"
+          "status": "completed",
+          "notes": "Created E04 rolling extrema benchmarks comparing deque-based O(n) vs naive O(n\u00d7k) scan. Benchmark file: crates/fast-ta-experiments/benches/e04_rolling_extrema.rs. Report file: benches/experiments/E04_rolling_extrema/REPORT.md. Includes 12 benchmark functions: rolling_max/min deque vs naive, fused extrema, period scaling, data size scaling, throughput, preallocated buffers, large period tests, and stochastic oscillator use case. Success criteria: \u22655\u00d7 speedup at period \u226550. Committed as e1827c2.",
+          "updated_at": "2025-12-20T22:24:29.955513+00:00"
         }
       ]
     },
@@ -418,7 +420,9 @@
             "command": "cargo test --package fast-ta-core -- plan::registry",
             "expected": "Registry tests pass"
           },
-          "status": "pending"
+          "status": "completed",
+          "notes": "Implemented minimal plan infrastructure with IndicatorSpec and registration:\n\nFiles created:\n- crates/fast-ta-core/src/plan/mod.rs - Plan module with documentation and re-exports\n- crates/fast-ta-core/src/plan/spec.rs - IndicatorSpec struct with IndicatorKind enum, OutputSpec, factory methods (new, bollinger, macd, stochastic_*), builder methods (with_name, with_dependency), and helper methods (config_key, min_data_length)\n- crates/fast-ta-core/src/plan/registry.rs - Registry for indicator specifications with register/unregister/get operations, config-based deduplication, find_by_config/find_by_kind queries, validate_dependencies, IntoIterator/FromIterator implementations\n\nFiles modified:\n- crates/fast-ta-core/src/lib.rs - Added plan module export\n\nTest coverage:\n- spec.rs: 30+ tests covering all indicator kinds, output specs, builder methods, and config key generation\n- registry.rs: 30+ tests covering all registry operations, deduplication, dependency validation\n\nCommitted as 6e38b12.",
+          "updated_at": "2025-12-20T22:31:06.489612+00:00"
         },
         {
           "id": "subtask-3-2",
@@ -434,7 +438,9 @@
             "command": "cargo test --package fast-ta-core -- plan::dag",
             "expected": "All DAG tests pass including cycle detection, linear dependencies, diamond dependencies"
           },
-          "status": "pending"
+          "status": "completed",
+          "notes": "Implemented DAG builder with petgraph for dependency resolution and topological sort. Features: DagBuilder (from_registry, add_node, add_edge, build), ExecutionPlan (execution_order, dependencies, dependents, roots, leaves, dependency/dependent counts), cycle detection. Comprehensive test suite covering empty/single/multi-node DAGs, linear chains, diamond patterns, cycle detection (self/two-node/three-node), missing dependencies, wide/deep DAGs. Committed as 32a8fb4.",
+          "updated_at": "2025-12-20T22:36:12.744843+00:00"
         },
         {
           "id": "subtask-3-3",
@@ -751,5 +757,5 @@
     }
   },
   "qa_signoff": null,
-  "last_updated": "2025-12-20T22:15:09.594943+00:00"
+  "last_updated": "2025-12-20T22:36:12.744851+00:00"
 }
