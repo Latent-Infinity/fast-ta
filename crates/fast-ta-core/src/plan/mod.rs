@@ -14,22 +14,29 @@
 //!
 //! 1. **IndicatorSpec**: Describes an indicator's parameters, dependencies, and outputs
 //! 2. **Registry**: Central storage for indicator specifications and factory functions
-//! 3. **DAG**: Dependency graph for resolving execution order (implemented separately)
+//! 3. **DAG**: Dependency graph for resolving execution order
 //!
 //! # Example
 //!
-//! ```ignore
+//! ```
 //! use fast_ta_core::plan::{Registry, IndicatorSpec, IndicatorKind};
+//! use fast_ta_core::plan::dag::DagBuilder;
 //!
 //! let mut registry = Registry::new();
 //!
-//! // Register a simple SMA indicator
-//! let spec = IndicatorSpec::new(IndicatorKind::Sma, 20);
-//! registry.register("sma_20", spec);
+//! // Register indicators with dependencies
+//! registry.register("sma_20", IndicatorSpec::new(IndicatorKind::Sma, 20));
+//! registry.register("custom",
+//!     IndicatorSpec::new(IndicatorKind::Custom, 10)
+//!         .with_dependency("sma_20"));
 //!
-//! // Query registered indicators
-//! let registered = registry.get("sma_20");
-//! assert!(registered.is_some());
+//! // Build execution plan
+//! let plan = DagBuilder::from_registry(&registry).build().unwrap();
+//!
+//! // Execute in topologically sorted order
+//! for id in plan.iter() {
+//!     println!("Execute: {}", id);
+//! }
 //! ```
 //!
 //! # Performance Considerations
@@ -42,6 +49,7 @@
 //! - Memory bandwidth is optimized through data locality
 //! - Fused kernels can be applied when applicable
 
+pub mod dag;
 pub mod registry;
 pub mod spec;
 
