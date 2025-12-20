@@ -142,3 +142,11 @@ cython_debug/
 
 # Windows
 Thumbs.db
+
+# Rust
+target/
+Cargo.lock
+*.rs.bk
+
+# Criterion benchmark outputs
+target/criterion/

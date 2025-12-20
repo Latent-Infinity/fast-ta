@@ -1,0 +1,19 @@
+[package]
+name = "fast-ta-experiments"
+description = "Benchmark suite and micro-experiments for fast-ta"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[dependencies]
+fast-ta-core = { path = "../fast-ta-core" }
+rand = { workspace = true }
+rand_chacha = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+[dev-dependencies]
+criterion = { workspace = true }
