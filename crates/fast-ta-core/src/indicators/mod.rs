@@ -13,12 +13,15 @@
 //! - [`sma`]: Simple Moving Average
 //! - [`ema`]: Exponential Moving Average (standard and Wilder smoothing variants)
 //! - [`rsi`]: Relative Strength Index (momentum oscillator using Wilder smoothing)
+//! - [`macd`]: Moving Average Convergence Divergence (trend-following momentum indicator)
 
 pub mod ema;
+pub mod macd;
 pub mod rsi;
 pub mod sma;
 
 // Re-export indicator functions for convenient access
 pub use ema::{ema, ema_wilder, ema_with_alpha};
+pub use macd::{macd, MacdOutput};
 pub use rsi::rsi;
 pub use sma::sma;

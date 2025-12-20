@@ -173,9 +173,9 @@
             "command": "cargo test --package fast-ta-core -- rsi",
             "expected": "All RSI tests pass including boundary conditions (all gains/losses)"
           },
-          "status": "in_progress",
-          "notes": "Starting RSI implementation with Wilder smoothing following SMA/EMA patterns",
-          "updated_at": "2025-12-20T21:25:02.752848+00:00"
+          "status": "completed",
+          "notes": "Implemented RSI indicator with Wilder smoothing. Functions: rsi() and rsi_into(). Handles all boundary conditions (all gains \u2192 100, all losses \u2192 0, no movement \u2192 50). Comprehensive test suite with 40+ tests. Committed as a003bdf.",
+          "updated_at": "2025-12-20T21:28:17.953872+00:00"
         },
         {
           "id": "subtask-1-4",
@@ -191,7 +191,9 @@
             "command": "cargo test --package fast-ta-core -- macd",
             "expected": "All MACD tests pass for all three outputs"
           },
-          "status": "pending"
+          "status": "in_progress",
+          "notes": "Starting MACD implementation using EMA components. Following the established patterns from ema.rs and rsi.rs.",
+          "updated_at": "2025-12-20T21:29:06.488548+00:00"
         },
         {
           "id": "subtask-1-5",
@@ -731,5 +733,5 @@
     }
   },
   "qa_signoff": null,
-  "last_updated": "2025-12-20T21:25:02.752858+00:00"
+  "last_updated": "2025-12-20T21:29:06.488560+00:00"
 }
