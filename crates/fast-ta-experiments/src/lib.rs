@@ -6,6 +6,7 @@
 //! # Modules
 //!
 //! - [`data`] - Synthetic data generators with seeded RNG for reproducible benchmarks
+//! - [`talib_baseline`] - TA-Lib comparison utilities using golden files
 //!
 //! # Example
 //!
@@ -22,9 +23,23 @@
 //! // Inject NaN values for testing sparse data handling
 //! let sparse = inject_nans(&prices, 0.05, 42);
 //! ```
+//!
+//! # TA-Lib Comparison
+//!
+//! ```rust,ignore
+//! use fast_ta_experiments::talib_baseline::{load_golden_file, compare_outputs, DEFAULT_TOLERANCE};
+//!
+//! // Load golden file with TA-Lib reference values
+//! let golden = load_golden_file("benches/golden/sma.json")?;
+//!
+//! // Compare fast-ta output against reference
+//! let result = compare_outputs(&fast_ta_output, &golden.test_cases[0].output, DEFAULT_TOLERANCE);
+//! assert!(result?.passed);
+//! ```
 
 #![warn(missing_docs)]
 #![warn(clippy::all)]
 #![warn(clippy::pedantic)]
 
 pub mod data;
+pub mod talib_baseline;
