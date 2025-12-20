@@ -11,8 +11,11 @@
 //! # Indicators
 //!
 //! - [`sma`]: Simple Moving Average
+//! - [`ema`]: Exponential Moving Average (standard and Wilder smoothing variants)
 
+pub mod ema;
 pub mod sma;
 
 // Re-export indicator functions for convenient access
+pub use ema::{ema, ema_wilder, ema_with_alpha};
 pub use sma::sma;
