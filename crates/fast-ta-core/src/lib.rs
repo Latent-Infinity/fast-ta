@@ -14,6 +14,7 @@
 //!
 //! - [`error`]: Error types for handling computation failures
 //! - [`traits`]: Core traits for numeric operations on data series
+//! - [`indicators`]: Technical analysis indicator implementations
 //!
 //! # Example
 //!
@@ -30,6 +31,21 @@
 //! let sum = simple_sum(&data).unwrap();
 //! assert!((sum - 15.0).abs() < 1e-10);
 //! ```
+//!
+//! # Indicators Example
+//!
+//! ```
+//! use fast_ta_core::indicators::sma;
+//!
+//! let data = vec![1.0_f64, 2.0, 3.0, 4.0, 5.0];
+//! let result = sma(&data, 3).unwrap();
+//!
+//! // First 2 values are NaN (lookback period)
+//! assert!(result[0].is_nan());
+//! assert!(result[1].is_nan());
+//! // SMA values start from index 2
+//! assert!((result[2] - 2.0).abs() < 1e-10);
+//! ```
 
 #![warn(missing_docs)]
 #![warn(clippy::all)]
@@ -37,8 +53,10 @@
 #![allow(clippy::module_name_repetitions)]
 
 pub mod error;
+pub mod indicators;
 pub mod traits;
 
 // Re-export commonly used types at crate root
 pub use error::{Error, Result};
+pub use indicators::sma;
 pub use traits::{SeriesElement, ValidatedInput};
