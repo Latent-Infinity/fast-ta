@@ -1,0 +1,20 @@
+{
+  "discovered_files": {
+    "crates/fast-ta-experiments/src/data.rs": {
+      "description": "Synthetic data generators using ChaCha8Rng from rand_chacha for deterministic benchmarks. Key functions: generate_random_walk(n, seed), generate_ohlcv(n, seed), inject_nans(series, ratio, seed). OHLCV struct has validate_invariants() method for testing.",
+      "category": "data_generation",
+      "discovered_at": "2025-12-20T21:09:39.058952+00:00"
+    },
+    "crates/fast-ta-core/src/traits.rs": {
+      "description": "SeriesElement trait extends num_traits::Float with additional methods for safe numeric conversions (from_usize, from_i32, from_f64). Blanket implementation covers all Float + NumCast + Copy + Default + Send + Sync types. ValidatedInput trait provides validation methods for slices and vectors.",
+      "category": "pattern",
+      "discovered_at": "2025-12-20T21:12:18.629095+00:00"
+    },
+    "crates/fast-ta-core/src/error.rs": {
+      "description": "Error enum with variants: InsufficientData(required, actual), NumericConversion(context), CyclicDependency(node_id), EmptyInput, InvalidPeriod(period, reason). Implements Display and std::error::Error. Result<T> type alias for Result<T, Error>.",
+      "category": "pattern",
+      "discovered_at": "2025-12-20T21:12:18.640598+00:00"
+    }
+  },
+  "last_updated": "2025-12-20T21:12:18.640606+00:00"
+}
