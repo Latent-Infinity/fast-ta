@@ -8,6 +8,7 @@
 //!
 //! - [`running_stat`]: Welford's algorithm for numerically stable mean, variance, and standard deviation
 //! - [`ema_fusion`]: Fused computation of EMA-family indicators (EMA, DEMA, TEMA, MACD)
+//! - [`rolling_extrema`]: Monotonic deque algorithm for O(n) rolling max/min
 //!
 //! # Performance
 //!
@@ -26,12 +27,17 @@
 //! variance) to handle extreme values and prevent catastrophic cancellation.
 
 pub mod ema_fusion;
+pub mod rolling_extrema;
 pub mod running_stat;
 
 // Re-export kernel types for convenient access
 pub use ema_fusion::{
     ema_fusion, ema_fusion_into, ema_multi, ema_multi_into, macd_fusion, macd_fusion_into,
     EmaFusionOutput, MacdFusionOutput,
+};
+pub use rolling_extrema::{
+    rolling_extrema, rolling_extrema_into, rolling_max, rolling_max_into, rolling_max_naive,
+    rolling_min, rolling_min_into, rolling_min_naive, MonotonicDeque, RollingExtremaOutput,
 };
 pub use running_stat::{
     rolling_stats, rolling_stats_into, RollingStat, RollingStatOutput, RunningStat,
