@@ -1,0 +1,500 @@
+{
+  "feature": "Update Product Requirements with Benchmark Results",
+  "workflow_type": "feature",
+  "workflow_rationale": "This task involves executing benchmarks, collecting data, and updating documentation - a multi-step feature completion workflow. The benchmark infrastructure is complete but has never been executed, requiring systematic data collection and documentation updates.",
+  "phases": [
+    {
+      "id": "phase-1-setup",
+      "name": "Setup & Validation",
+      "type": "setup",
+      "description": "Build the workspace and verify existing tests pass before running benchmarks",
+      "depends_on": [],
+      "parallel_safe": true,
+      "subtasks": [
+        {
+          "id": "subtask-1-1",
+          "description": "Build workspace in release mode to prepare for benchmarking",
+          "service": "main",
+          "files_to_modify": [],
+          "files_to_create": [],
+          "patterns_from": [],
+          "verification": {
+            "type": "command",
+            "command": "cargo build --workspace --release",
+            "expected": "Build completes without errors"
+          },
+          "status": "pending"
+        },
+        {
+          "id": "subtask-1-2",
+          "description": "Verify existing unit tests pass before making changes",
+          "service": "main",
+          "files_to_modify": [],
+          "files_to_create": [],
+          "patterns_from": [],
+          "verification": {
+            "type": "command",
+            "command": "cargo test --workspace",
+            "expected": "All tests pass"
+          },
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": "phase-2-benchmarks",
+      "name": "Execute Benchmark Suite",
+      "type": "implementation",
+      "description": "Run all 7 experiments (E01-E07) and collect benchmark data",
+      "depends_on": ["phase-1-setup"],
+      "parallel_safe": false,
+      "subtasks": [
+        {
+          "id": "subtask-2-1",
+          "description": "Execute E01 baseline cost benchmarks for all 7 indicators",
+          "service": "main",
+          "files_to_modify": [],
+          "files_to_create": [],
+          "patterns_from": ["crates/fast-ta-experiments/benches/e01_baseline.rs"],
+          "verification": {
+            "type": "command",
+            "command": "cargo bench --package fast-ta-experiments --bench e01_baseline",
+            "expected": "Benchmark completes, HTML report generated in target/criterion/e01_baseline/"
+          },
+          "status": "pending",
+          "notes": "Expected runtime: 5-10 minutes. Measures SMA, EMA, RSI, MACD, ATR, Bollinger, Stochastic at 1K/10K/100K data points."
+        },
+        {
+          "id": "subtask-2-2",
+          "description": "Execute E02 RunningStat fusion benchmarks (Welford's algorithm)",
+          "service": "main",
+          "files_to_modify": [],
+          "files_to_create": [],
+          "patterns_from": ["crates/fast-ta-experiments/benches/e02_running_stat.rs"],
+          "verification": {
+            "type": "command",
+            "command": "cargo bench --package fast-ta-experiments --bench e02_running_stat",
+            "expected": "Benchmark completes, HTML report generated in target/criterion/e02_running_stat/"
+          },
+          "status": "pending",
+          "notes": "Compares fused vs separate passes for mean/variance/stddev. Target: ≥20% speedup."
+        },
+        {
+          "id": "subtask-2-3",
+          "description": "Execute E03 EMA fusion benchmarks",
+          "service": "main",
+          "files_to_modify": [],
+          "files_to_create": [],
+          "patterns_from": ["crates/fast-ta-experiments/benches/e03_ema_fusion.rs"],
+          "verification": {
+            "type": "command",
+            "command": "cargo bench --package fast-ta-experiments --bench e03_ema_fusion",
+            "expected": "Benchmark completes, HTML report generated in target/criterion/e03_ema_fusion/"
+          },
+          "status": "pending",
+          "notes": "Compares fused multi-EMA vs separate EMA calls. Target: ≥15% speedup for ≥10 EMAs."
+        },
+        {
+          "id": "subtask-2-4",
+          "description": "Execute E04 rolling extrema benchmarks (deque vs naive)",
+          "service": "main",
+          "files_to_modify": [],
+          "files_to_create": [],
+          "patterns_from": ["crates/fast-ta-experiments/benches/e04_rolling_extrema.rs"],
+          "verification": {
+            "type": "command",
+            "command": "cargo bench --package fast-ta-experiments --bench e04_rolling_extrema",
+            "expected": "Benchmark completes, HTML report generated in target/criterion/e04_rolling_extrema/"
+          },
+          "status": "pending",
+          "notes": "Compares O(n) deque algorithm vs O(n×k) naive scan. Target: ≥5× speedup at k≥50."
+        },
+        {
+          "id": "subtask-2-5",
+          "description": "Execute E05 plan compilation overhead benchmarks",
+          "service": "main",
+          "files_to_modify": [],
+          "files_to_create": [],
+          "patterns_from": ["crates/fast-ta-experiments/benches/e05_plan_overhead.rs"],
+          "verification": {
+            "type": "command",
+            "command": "cargo bench --package fast-ta-experiments --bench e05_plan_overhead",
+            "expected": "Benchmark completes, HTML report generated in target/criterion/e05_plan_overhead/"
+          },
+          "status": "pending",
+          "notes": "Measures registry, DAG construction, and plan execution overhead. Target: <100 executions break-even."
+        },
+        {
+          "id": "subtask-2-6",
+          "description": "Execute E06 memory write pattern benchmarks",
+          "service": "main",
+          "files_to_modify": [],
+          "files_to_create": [],
+          "patterns_from": ["crates/fast-ta-experiments/benches/e06_memory_writes.rs"],
+          "verification": {
+            "type": "command",
+            "command": "cargo bench --package fast-ta-experiments --bench e06_memory_writes",
+            "expected": "Benchmark completes, HTML report generated in target/criterion/e06_memory_writes/"
+          },
+          "status": "pending",
+          "notes": "Compares write-every-bar vs buffered vs chunked processing. Target: ≥10% improvement."
+        },
+        {
+          "id": "subtask-2-7",
+          "description": "Execute E07 end-to-end comparison benchmarks (direct vs plan mode)",
+          "service": "main",
+          "files_to_modify": [],
+          "files_to_create": [],
+          "patterns_from": ["crates/fast-ta-experiments/benches/e07_end_to_end.rs"],
+          "verification": {
+            "type": "command",
+            "command": "cargo bench --package fast-ta-experiments --bench e07_end_to_end",
+            "expected": "Benchmark completes, HTML report generated in target/criterion/e07_end_to_end/"
+          },
+          "status": "pending",
+          "notes": "Final comprehensive comparison of direct vs plan mode for 7/14/21/28 indicators. Target: ≥1.5× for ≥20 indicators."
+        }
+      ]
+    },
+    {
+      "id": "phase-3-e01-report",
+      "name": "Populate E01 Baseline Report",
+      "type": "implementation",
+      "description": "Extract E01 benchmark results and populate the baseline REPORT.md",
+      "depends_on": ["phase-2-benchmarks"],
+      "parallel_safe": true,
+      "subtasks": [
+        {
+          "id": "subtask-3-1",
+          "description": "Extract E01 timing data from Criterion output and update REPORT.md with actual results",
+          "service": "main",
+          "files_to_modify": ["benches/experiments/E01_baseline/REPORT.md"],
+          "files_to_create": [],
+          "patterns_from": ["benches/experiments/E01_baseline/REPORT.md"],
+          "verification": {
+            "type": "manual",
+            "instructions": "Verify all TBD values in E01 REPORT.md are replaced with actual timing data. Verify O(n) complexity by checking 10K→100K ratios are approximately 10×."
+          },
+          "status": "pending",
+          "notes": "Replace TBD values in: Individual Indicator Performance table, Combined Performance table, Throughput Analysis table, Complexity Verification table. Update Status from PENDING to COMPLETE."
+        }
+      ]
+    },
+    {
+      "id": "phase-4-e02-e04-reports",
+      "name": "Populate Kernel Experiment Reports (E02-E04)",
+      "type": "implementation",
+      "description": "Extract E02-E04 benchmark results and populate kernel experiment reports with go/no-go decisions",
+      "depends_on": ["phase-2-benchmarks"],
+      "parallel_safe": true,
+      "subtasks": [
+        {
+          "id": "subtask-4-1",
+          "description": "Extract E02 RunningStat fusion results and update REPORT.md with speedup percentages and go/no-go decision",
+          "service": "main",
+          "files_to_modify": ["benches/experiments/E02_running_stat/REPORT.md"],
+          "files_to_create": [],
+          "patterns_from": ["benches/experiments/E02_running_stat/REPORT.md"],
+          "verification": {
+            "type": "manual",
+            "instructions": "Verify all TBD values replaced. Verify go/no-go decision recorded based on ≥20% speedup threshold."
+          },
+          "status": "pending",
+          "notes": "Key tables: Primary Comparison (Fused vs Separate), Component Breakdown, Bollinger Comparison, Period Sensitivity. Decision: GO if ≥20%, INVESTIGATE if 10-20%, NO-GO if <10%."
+        },
+        {
+          "id": "subtask-4-2",
+          "description": "Extract E03 EMA fusion results and update REPORT.md with speedup percentages and go/no-go decision",
+          "service": "main",
+          "files_to_modify": ["benches/experiments/E03_ema_fusion/REPORT.md"],
+          "files_to_create": [],
+          "patterns_from": ["benches/experiments/E03_ema_fusion/REPORT.md"],
+          "verification": {
+            "type": "manual",
+            "instructions": "Verify all TBD values replaced. Verify go/no-go decision recorded based on ≥15% speedup for ≥10 EMAs threshold."
+          },
+          "status": "pending",
+          "notes": "Key tables: 10 EMAs comparison, EMA Count Scaling. Decision: GO if ≥15% for 10 EMAs."
+        },
+        {
+          "id": "subtask-4-3",
+          "description": "Extract E04 rolling extrema results and update REPORT.md with speedup multiples and go/no-go decision",
+          "service": "main",
+          "files_to_modify": ["benches/experiments/E04_rolling_extrema/REPORT.md"],
+          "files_to_create": [],
+          "patterns_from": ["benches/experiments/E04_rolling_extrema/REPORT.md"],
+          "verification": {
+            "type": "manual",
+            "instructions": "Verify all TBD values replaced. Verify go/no-go decision recorded based on ≥5× speedup at k≥50 threshold."
+          },
+          "status": "pending",
+          "notes": "Key tables: Deque vs Naive comparison by period. Decision: GO if ≥5× at k=50."
+        }
+      ]
+    },
+    {
+      "id": "phase-5-e05-e06-reports",
+      "name": "Populate Infrastructure Experiment Reports (E05-E06)",
+      "type": "implementation",
+      "description": "Extract E05-E06 benchmark results and populate infrastructure experiment reports",
+      "depends_on": ["phase-2-benchmarks"],
+      "parallel_safe": true,
+      "subtasks": [
+        {
+          "id": "subtask-5-1",
+          "description": "Extract E05 plan overhead results and update REPORT.md with break-even analysis and go/no-go decision",
+          "service": "main",
+          "files_to_modify": ["benches/experiments/E05_plan_overhead/REPORT.md"],
+          "files_to_create": [],
+          "patterns_from": ["benches/experiments/E05_plan_overhead/REPORT.md"],
+          "verification": {
+            "type": "manual",
+            "instructions": "Verify all TBD values replaced. Verify break-even point calculated. Decision recorded based on <100 executions threshold."
+          },
+          "status": "pending",
+          "notes": "Key metrics: Registration time, DAG construction time, full compilation time, break-even executions."
+        },
+        {
+          "id": "subtask-5-2",
+          "description": "Extract E06 memory write pattern results and update REPORT.md with pattern recommendations",
+          "service": "main",
+          "files_to_modify": ["benches/experiments/E06_memory_writes/REPORT.md"],
+          "files_to_create": [],
+          "patterns_from": ["benches/experiments/E06_memory_writes/REPORT.md"],
+          "verification": {
+            "type": "manual",
+            "instructions": "Verify all TBD values replaced. Verify go/no-go decision recorded based on ≥10% improvement threshold."
+          },
+          "status": "pending",
+          "notes": "Key tables: Write pattern comparison (allocating, pre-allocated, buffered), multi-output patterns."
+        }
+      ]
+    },
+    {
+      "id": "phase-6-e07-report",
+      "name": "Populate E07 End-to-End Report",
+      "type": "implementation",
+      "description": "Extract E07 benchmark results and populate the final end-to-end comparison report with architecture recommendation",
+      "depends_on": ["phase-2-benchmarks"],
+      "parallel_safe": true,
+      "subtasks": [
+        {
+          "id": "subtask-6-1",
+          "description": "Extract E07 end-to-end results and update REPORT.md with direct vs plan comparison and final architecture recommendation",
+          "service": "main",
+          "files_to_modify": ["benches/experiments/E07_end_to_end/REPORT.md"],
+          "files_to_create": [],
+          "patterns_from": ["benches/experiments/E07_end_to_end/REPORT.md"],
+          "verification": {
+            "type": "manual",
+            "instructions": "Verify all TBD values replaced. Verify direct vs plan speedups recorded for 7/14/21/28 indicators. Final GO/NO-GO/CONDITIONAL decision documented."
+          },
+          "status": "pending",
+          "notes": "Key tables: Baseline 7 Indicators, Direct vs Plan Comparison, Workload Scaling. Decision: GO if ≥1.5× for ≥20 indicators, CONDITIONAL if ≥1.2× for baseline 7."
+        }
+      ]
+    },
+    {
+      "id": "phase-7-summary",
+      "name": "Update Experiment Summary",
+      "type": "implementation",
+      "description": "Consolidate all experiment results into the SUMMARY.md document",
+      "depends_on": ["phase-3-e01-report", "phase-4-e02-e04-reports", "phase-5-e05-e06-reports", "phase-6-e07-report"],
+      "parallel_safe": false,
+      "subtasks": [
+        {
+          "id": "subtask-7-1",
+          "description": "Update docs/experiments/SUMMARY.md with consolidated results and all go/no-go decisions",
+          "service": "main",
+          "files_to_modify": ["docs/experiments/SUMMARY.md"],
+          "files_to_create": [],
+          "patterns_from": ["docs/experiments/SUMMARY.md"],
+          "verification": {
+            "type": "manual",
+            "instructions": "Verify Executive Summary table updated with actual status and decisions for all 7 experiments. Verify all PENDING changed to actual outcomes."
+          },
+          "status": "pending",
+          "notes": "Update Executive Summary table. Change status from PENDING to actual outcomes. Update Overall Recommendation section."
+        }
+      ]
+    },
+    {
+      "id": "phase-8-prd-update",
+      "name": "Update Product Requirements Document",
+      "type": "implementation",
+      "description": "Update the PRD Section 1.3 with validated hypothesis status based on experiment results",
+      "depends_on": ["phase-7-summary"],
+      "parallel_safe": false,
+      "subtasks": [
+        {
+          "id": "subtask-8-1",
+          "description": "Update docs/product-requirements.md Section 1.3 hypothesis table with VALIDATED or INVALIDATED status for all 7 hypotheses",
+          "service": "main",
+          "files_to_modify": ["docs/product-requirements.md"],
+          "files_to_create": [],
+          "patterns_from": ["docs/product-requirements.md"],
+          "verification": {
+            "type": "manual",
+            "instructions": "Verify all 7 hypotheses (H1-H7) have status changed from PENDING VALIDATION to VALIDATED ✓ or INVALIDATED ✗. Verify supporting experiment data referenced."
+          },
+          "status": "pending",
+          "notes": "H1→E01, H2→E02, H3→E03, H4→E04, H5→E05, H6→E06, H7→E07. Use **VALIDATED** ✓ or **INVALIDATED** ✗ format."
+        }
+      ]
+    },
+    {
+      "id": "phase-9-validation",
+      "name": "Final Validation",
+      "type": "integration",
+      "description": "Verify all documentation updates are complete and consistent, tests still pass",
+      "depends_on": ["phase-8-prd-update"],
+      "parallel_safe": false,
+      "subtasks": [
+        {
+          "id": "subtask-9-1",
+          "description": "Verify no TBD values remain in any experiment reports or documentation",
+          "service": "main",
+          "files_to_modify": [],
+          "files_to_create": [],
+          "patterns_from": [],
+          "verification": {
+            "type": "command",
+            "command": "grep -r 'TBD' benches/experiments/*/REPORT.md docs/experiments/SUMMARY.md | wc -l",
+            "expected": "0 (no TBD values remaining)"
+          },
+          "status": "pending"
+        },
+        {
+          "id": "subtask-9-2",
+          "description": "Verify existing tests still pass after all documentation changes",
+          "service": "main",
+          "files_to_modify": [],
+          "files_to_create": [],
+          "patterns_from": [],
+          "verification": {
+            "type": "command",
+            "command": "cargo test --workspace",
+            "expected": "All tests pass"
+          },
+          "status": "pending"
+        },
+        {
+          "id": "subtask-9-3",
+          "description": "Verify consistency between REPORT.md files and SUMMARY.md decisions",
+          "service": "main",
+          "files_to_modify": [],
+          "files_to_create": [],
+          "patterns_from": [],
+          "verification": {
+            "type": "manual",
+            "instructions": "Cross-check that decisions in individual REPORT.md files match Executive Summary table in SUMMARY.md and hypothesis status in product-requirements.md."
+          },
+          "status": "pending"
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "total_phases": 9,
+    "total_subtasks": 18,
+    "services_involved": ["main"],
+    "parallelism": {
+      "max_parallel_phases": 4,
+      "parallel_groups": [
+        {
+          "phases": ["phase-3-e01-report", "phase-4-e02-e04-reports", "phase-5-e05-e06-reports", "phase-6-e07-report"],
+          "reason": "All depend only on phase-2-benchmarks completion, update different files with no conflicts"
+        }
+      ],
+      "recommended_workers": 1,
+      "speedup_estimate": "Sequential execution recommended - benchmark execution is the time bottleneck (30-60 min). Report population is fast (15-30 min total)."
+    },
+    "startup_command": "source auto-claude/.venv/bin/activate && python auto-claude/run.py --spec 002 --parallel 1"
+  },
+  "verification_strategy": {
+    "risk_level": "low",
+    "skip_validation": false,
+    "test_creation_phase": "none",
+    "test_types_required": ["unit"],
+    "security_scanning_required": false,
+    "staging_deployment_required": false,
+    "acceptance_criteria": [
+      "All 7 benchmark experiments execute successfully",
+      "All REPORT.md files have actual benchmark data (no TBD values)",
+      "All go/no-go decisions documented with supporting data",
+      "Product requirements hypotheses updated with validated status",
+      "Existing tests continue to pass"
+    ],
+    "verification_steps": [
+      {
+        "name": "Workspace Tests",
+        "command": "cargo test --workspace",
+        "expected_outcome": "All tests pass",
+        "type": "test",
+        "required": true,
+        "blocking": true
+      },
+      {
+        "name": "No TBD Remaining",
+        "command": "grep -r 'TBD' benches/experiments/*/REPORT.md docs/experiments/SUMMARY.md | wc -l",
+        "expected_outcome": "0",
+        "type": "command",
+        "required": true,
+        "blocking": true
+      },
+      {
+        "name": "Hypothesis Status Updated",
+        "command": "grep -c 'PENDING VALIDATION' docs/product-requirements.md",
+        "expected_outcome": "0",
+        "type": "command",
+        "required": true,
+        "blocking": true
+      }
+    ],
+    "reasoning": "Low risk documentation task - no code changes that could break functionality. Main validation is ensuring benchmark execution succeeds and all TBD placeholders are replaced."
+  },
+  "qa_acceptance": {
+    "unit_tests": {
+      "required": true,
+      "commands": ["cargo test --workspace"],
+      "minimum_coverage": null
+    },
+    "integration_tests": {
+      "required": false,
+      "commands": [],
+      "services_to_test": []
+    },
+    "e2e_tests": {
+      "required": false,
+      "commands": [],
+      "flows": []
+    },
+    "browser_verification": {
+      "required": false,
+      "pages": []
+    },
+    "database_verification": {
+      "required": false,
+      "checks": []
+    },
+    "benchmark_verification": {
+      "required": true,
+      "checks": [
+        "Criterion HTML reports generated in target/criterion/",
+        "All 7 experiments (E01-E07) have report directories",
+        "JSON data available for timing extraction"
+      ]
+    },
+    "documentation_verification": {
+      "required": true,
+      "checks": [
+        "No TBD values in E01-E07 REPORT.md files",
+        "No TBD values in docs/experiments/SUMMARY.md",
+        "No PENDING VALIDATION in docs/product-requirements.md Section 1.3",
+        "Go/no-go decisions documented for E02-E07",
+        "Hypothesis H1-H7 status updated to VALIDATED or INVALIDATED"
+      ]
+    }
+  },
+  "qa_signoff": null
+}
