@@ -376,7 +376,8 @@ fn bench_preallocated(c: &mut Criterion) {
                         variance_output[i] = stddev_output[i] * stddev_output[i];
                     }
 
-                    black_box(&variance_output)
+                    // Prevent the compiler from optimizing away variance computation
+                    black_box(variance_output[size - 1])
                 })
             },
         );
