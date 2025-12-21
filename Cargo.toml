@@ -14,6 +14,7 @@ authors = ["Latenty Infinity"]
 # Core dependencies
 num-traits = "0.2"
 petgraph = "0.6"
+thiserror = "1.0"
 
 # Test data generation
 rand = "0.8"
