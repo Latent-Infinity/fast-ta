@@ -506,10 +506,10 @@ fn bench_preallocated(c: &mut Criterion) {
                 let mut output3 = vec![0.0_f64; size];
 
                 b.iter(|| {
-                    black_box(ema_into(black_box(&data.prices), 10, &mut output1).unwrap());
-                    black_box(ema_into(black_box(&data.prices), 20, &mut output2).unwrap());
-                    black_box(ema_into(black_box(&data.prices), 30, &mut output3).unwrap());
-                    black_box((&output1, &output2, &output3))
+                    ema_into(black_box(&data.prices), 10, &mut output1).unwrap();
+                    ema_into(black_box(&data.prices), 20, &mut output2).unwrap();
+                    ema_into(black_box(&data.prices), 30, &mut output3).unwrap();
+                    black_box(output1[0] + output2[0] + output3[0])
                 })
             },
         );
