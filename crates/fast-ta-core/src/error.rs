@@ -3,15 +3,16 @@
 //! This module defines the error types used throughout the fast-ta library
 //! for handling various failure conditions.
 
-use std::fmt;
+use thiserror::Error;
 
 /// The main error type for fast-ta operations.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Error)]
 pub enum Error {
     /// The input data series is too short for the requested operation.
     ///
     /// This error is returned when the input data has fewer elements than
     /// required by the indicator's period or lookback window.
+    #[error("insufficient data: required {required} elements, got {actual}")]
     InsufficientData {
         /// The number of data points required.
         required: usize,
@@ -24,6 +25,7 @@ pub enum Error {
     /// This error occurs when using `NumCast::from()` to convert values
     /// (e.g., converting a `usize` period to a generic `Float` type) and
     /// the conversion fails.
+    #[error("numeric conversion failed: {context}")]
     NumericConversion {
         /// Description of the conversion that failed.
         context: &'static str,
@@ -33,6 +35,7 @@ pub enum Error {
     ///
     /// This error is returned when the dependency graph contains a cycle,
     /// which would result in infinite recursion during execution.
+    #[error("cyclic dependency detected involving node {node_id}")]
     CyclicDependency {
         /// Identifier of the node that participates in the cycle.
         node_id: usize,
@@ -41,12 +44,14 @@ pub enum Error {
     /// The input data series is empty.
     ///
     /// This is a special case of insufficient data where no data was provided.
+    #[error("empty input: no data provided")]
     EmptyInput,
 
     /// The period parameter is invalid.
     ///
     /// This error is returned when the period is zero or otherwise invalid
     /// for the requested operation.
+    #[error("invalid period {period}: {reason}")]
     InvalidPeriod {
         /// The invalid period value that was provided.
         period: usize,
@@ -54,38 +59,6 @@ pub enum Error {
         reason: &'static str,
     },
 }
-
-impl fmt::Display for Error {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::InsufficientData { required, actual } => {
-                write!(
-                    f,
-                    "insufficient data: required {} elements, got {}",
-                    required, actual
-                )
-            }
-            Self::NumericConversion { context } => {
-                write!(f, "numeric conversion failed: {}", context)
-            }
-            Self::CyclicDependency { node_id } => {
-                write!(
-                    f,
-                    "cyclic dependency detected involving node {}",
-                    node_id
-                )
-            }
-            Self::EmptyInput => {
-                write!(f, "empty input: no data provided")
-            }
-            Self::InvalidPeriod { period, reason } => {
-                write!(f, "invalid period {}: {}", period, reason)
-            }
-        }
-    }
-}
-
-impl std::error::Error for Error {}
 
 /// Convenience type alias for Results using the fast-ta Error type.
 pub type Result<T> = std::result::Result<T, Error>;
