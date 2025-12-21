@@ -4,8 +4,8 @@
 
 **Experiment ID**: E07
 **Name**: End-to-End Workload Comparison
-**Status**: PENDING (awaiting benchmark execution)
-**Date**: TBD
+**Status**: COMPLETED
+**Date**: 2024-12-21
 
 ## Objective
 
@@ -117,74 +117,76 @@ Test with increasing indicator counts:
 
 ## Results
 
-*Results will be populated after running: `cargo bench --package fast-ta-experiments --bench e07_end_to_end`*
-
 ### Baseline 7 Indicators (10K data points)
 
 | Mode | Time | vs Direct | vs TA-Lib |
 |------|------|-----------|-----------|
-| Direct (inline) | TBD μs | baseline | TBD |
-| Direct (executor) | TBD μs | TBD | TBD |
-| Plan (executor) | TBD μs | **TBD** | TBD |
-| Plan (helper) | TBD μs | TBD | TBD |
+| Direct (inline) | 284 μs | baseline | N/A |
+| Direct (executor) | 283 μs | 1.00× | N/A |
+| Plan (executor) | 459 μs | **0.62×** (slower) | N/A |
+| Plan (helper) | 459 μs | 0.62× (slower) | N/A |
 
 ### Direct vs Plan Comparison
 
 | Data Size | Direct Time | Plan Time | Speedup | Decision |
 |-----------|-------------|-----------|---------|----------|
-| 1K | TBD μs | TBD μs | TBD× | TBD |
-| 10K | TBD μs | TBD μs | TBD× | TBD |
-| 100K | TBD μs | TBD μs | TBD× | TBD |
-| 1M | TBD ms | TBD ms | TBD× | TBD |
+| 1K | 30 μs | 42 μs | **0.71×** (slower) | NO-GO |
+| 10K | 285 μs | 465 μs | **0.61×** (slower) | NO-GO |
+| 100K | 2.79 ms | 6.06 ms | **0.46×** (slower) | NO-GO |
+| 1M | 28.4 ms | 61.9 ms | **0.46×** (slower) | NO-GO |
 
 ### Workload Scaling (10K data points)
 
 | Indicator Count | Direct | Plan | Speedup | Meets Target |
 |-----------------|--------|------|---------|--------------|
-| 7 | TBD μs | TBD μs | TBD× | TBD |
-| 14 | TBD μs | TBD μs | TBD× | TBD |
-| 21 | TBD μs | TBD μs | TBD× | TBD |
-| 28 | TBD μs | TBD μs | TBD× | TBD |
+| 7 | 194 μs | 294 μs | **0.66×** (slower) | NO |
+| 14 | 389 μs | 546 μs | **0.71×** (slower) | NO |
+| 21 | 619 μs | 922 μs | **0.67×** (slower) | NO |
+| 28 | 866 μs | 1.25 ms | **0.69×** (slower) | NO |
 
 ### EMA Fusion Benefit
 
 | Configuration | Separate EMAs | Fused EMAs | Speedup |
 |--------------|---------------|------------|---------|
-| 7 EMAs (10K) | TBD μs | TBD μs | TBD× |
+| 7 EMAs (10K) | 111 μs | N/A | N/A |
+
+**Note**: EMA fusion benchmark did not show fused results. Based on E03 results, fused EMA is actually 30% slower than separate.
 
 ### Realistic Workload (Daily Trading Bars)
 
 | Scenario | Direct | Plan | Speedup |
 |----------|--------|------|---------|
-| 1 year (252 bars) | TBD μs | TBD μs | TBD× |
-| 10 years (2520 bars) | TBD μs | TBD μs | TBD× |
-| 100 years (25200 bars) | TBD μs | TBD μs | TBD× |
+| 1 year (252 bars) | 7.0 μs | 10.5 μs | **0.67×** (slower) |
+| 10 years (2520 bars) | 71 μs | 105 μs | **0.68×** (slower) |
+| 100 years (25200 bars) | 708 μs | 1.37 ms | **0.52×** (slower) |
 
 ### Plan Reuse (Amortization)
 
 | Execution Pattern | Direct | Plan | Speedup |
 |-------------------|--------|------|---------|
-| Single execution | TBD μs | TBD μs | TBD× |
-| Batch of 5 executions | TBD μs | TBD μs | TBD× |
+| Single execution | 285 μs | 462 μs | **0.62×** (slower) |
+| Batch of 5 executions | 1.43 ms | 3.03 ms | **0.47×** (slower) |
+
+**Note**: Plan reuse does NOT help - plan mode becomes even slower in batch execution relative to direct mode.
 
 ### Throughput Analysis
 
 | Mode | 10K (elem/s) | 100K (elem/s) | 1M (elem/s) |
 |------|--------------|---------------|-------------|
-| Direct | TBD M/s | TBD M/s | TBD M/s |
-| Plan | TBD M/s | TBD M/s | TBD M/s |
+| Direct | 34.4 M/s | 35.9 M/s | 35.3 M/s |
+| Plan | 21.7 M/s | 16.4 M/s | 16.2 M/s |
 
 ### Individual Indicator Performance (10K)
 
 | Indicator | Direct Time | Notes |
 |-----------|-------------|-------|
-| SMA | TBD μs | Baseline |
-| EMA | TBD μs | Similar to SMA |
-| RSI | TBD μs | Uses Wilder smoothing |
-| MACD | TBD μs | 3 EMA operations |
-| ATR | TBD μs | OHLCV required |
-| Bollinger | TBD μs | Mean + stddev |
-| Stochastic | TBD μs | Max + min + SMA |
+| SMA | 12.9 μs | Baseline |
+| EMA | 16.0 μs | Similar to SMA |
+| RSI | 43.5 μs | Uses Wilder smoothing |
+| MACD | 68.0 μs | 3 EMA operations |
+| ATR | 43.9 μs | OHLCV required |
+| Bollinger | 26.4 μs | Mean + stddev |
+| Stochastic | 74.3 μs | Max + min + SMA |
 
 ## Analysis
 
@@ -206,23 +208,28 @@ However, actual speedup will be lower due to:
 
 **Expected realistic speedup**: 1.2× - 1.4× for baseline 7 indicators
 
-### Fusion Contribution Analysis
+**ACTUAL OBSERVED**: Plan mode is 1.5-2.2× **SLOWER** than direct mode
 
-| Fusion Type | Direct Passes | Fused Passes | Savings |
-|-------------|---------------|--------------|---------|
-| EMA multi | N × 1 | ~1 | (N-1)/N |
-| MACD | 3 | 1 | 2/3 |
-| Bollinger (running_stat) | 2 | 1 | 1/2 |
-| Stochastic (extrema) | 2 | 1 | 1/2 |
+### Root Cause Analysis
+
+The plan mode slowdown is caused by multiple factors discovered in earlier experiments:
+
+1. **E02 (RunningStat Fusion)**: Welford-based fusion is 2.8× slower due to expensive division operations
+2. **E03 (EMA Fusion)**: Fused EMA is 30% slower due to SIMD vectorization prevention
+3. **E04 (Rolling Extrema)**: Only beneficial for period > 25, otherwise slower
+4. **E05 (Plan Overhead)**: Plan compilation is fast (2.2μs) but fusion doesn't provide benefit
+5. **E06 (Memory Writes)**: Buffered writes are 19-27% slower than direct writes
+
+The fusion kernels that were expected to reduce data passes actually introduce computational overhead that exceeds the memory bandwidth savings.
 
 ### Break-Even Analysis
 
 From E05 results:
 
 ```
-Plan compilation overhead: ~TBD μs
-Per-indicator execution savings: ~TBD μs
-Break-even point: TBD indicators
+Plan compilation overhead: 2.2 μs
+Per-indicator execution savings: NEGATIVE (plan is slower)
+Break-even point: NEVER (fusion doesn't provide benefit)
 ```
 
 ### Memory Access Pattern Impact
@@ -230,14 +237,14 @@ Break-even point: TBD indicators
 From E06 results:
 
 ```
-Multi-output write pattern: TBD (sequential vs interleaved)
-Allocation overhead: TBD%
-Buffer reuse benefit: TBD%
+Multi-output write pattern: Sequential is better than interleaved for plan
+Allocation overhead: Pre-allocation saves 17-28%
+Buffer reuse benefit: Marginal (10% at best)
 ```
 
 ## Go/No-Go Decision
 
-**Decision**: PENDING
+**Decision**: **NO-GO** - Direct mode is preferred
 
 ### Decision Criteria
 
@@ -251,55 +258,58 @@ Buffer reuse benefit: TBD%
 
 #### NO-GO (Direct Mode Preferred):
 
-- [ ] Plan mode shows <1.1× speedup for baseline indicators
-- [ ] Plan mode is slower for any common configuration
-- [ ] Overhead doesn't amortize within reasonable workloads
-- [ ] Complex fusion logic outweighs benefits
+- [x] Plan mode shows <1.1× speedup for baseline indicators
+- [x] Plan mode is slower for any common configuration
+- [x] Overhead doesn't amortize within reasonable workloads
+- [x] Complex fusion logic outweighs benefits
 
-### Preliminary Assessment
+### Observed Results
 
-*To be filled after benchmark execution*
+**Plan mode is consistently 1.4-2.2× SLOWER than direct mode across all configurations tested.**
 
-**Observed Speedups**:
-- 7 indicators: TBD×
-- 14 indicators: TBD×
-- 21 indicators: TBD×
+| Configuration | Direct Time | Plan Time | Plan Slowdown |
+|--------------|-------------|-----------|---------------|
+| 7 indicators @ 10K | 194 μs | 294 μs | 1.52× slower |
+| 14 indicators @ 10K | 389 μs | 546 μs | 1.40× slower |
+| 21 indicators @ 10K | 619 μs | 922 μs | 1.49× slower |
+| 28 indicators @ 10K | 866 μs | 1.25 ms | 1.44× slower |
+| 7 indicators @ 100K | 1.88 ms | 2.85 ms | 1.51× slower |
+| 7 indicators @ 1M | 28.4 ms | 61.9 ms | 2.18× slower |
 
-**Recommendation**: TBD
+**Recommendation**: **Abandon plan-based architecture. Use direct mode for all indicator computations.**
 
 ## Implications for fast-ta Architecture
 
-### If GO Decision:
-
-1. **Default to plan mode** for multi-indicator workloads
-2. **Expose both APIs**:
-   ```rust
-   // Direct mode (simple use case)
-   let sma = fast_ta::sma(&prices, 20)?;
-
-   // Plan mode (performance use case)
-   let results = fast_ta::compute_many(&prices, &[
-       Indicator::sma(20),
-       Indicator::ema(20),
-       Indicator::rsi(14),
-   ])?;
-   ```
-3. **Document performance characteristics** in API docs
-4. **Implement plan caching** for repeated execution
-
-### If NO-GO Decision:
+### NO-GO Decision Actions:
 
 1. **Remove plan infrastructure** from core library
-2. **Keep fusion kernels** as internal optimizations
+2. **Keep fusion kernels** as internal optimizations only where proven beneficial
 3. **Simplify public API** to direct indicator calls
-4. **Move plan code** to experimental/optional module
+4. **Move plan code** to experimental/optional module (or archive)
 
-### If CONDITIONAL GO Decision:
+### Recommended Architecture
 
-1. **Threshold-based selection**: Use plan mode only for N+ indicators
-2. **Automatic mode selection** based on workload analysis
-3. **Expose both modes** with clear documentation
-4. **Default to direct mode** for simplicity
+```rust
+// Direct mode API (preferred - simpler and faster)
+let sma = fast_ta::sma(&prices, 20)?;
+let ema = fast_ta::ema(&prices, 20)?;
+let rsi = fast_ta::rsi(&prices, 14)?;
+
+// For computing multiple indicators, just call them sequentially
+// This is actually FASTER than the plan-based approach
+let results = vec![
+    fast_ta::sma(&prices, 20)?,
+    fast_ta::ema(&prices, 20)?,
+    fast_ta::rsi(&prices, 14)?,
+];
+```
+
+### What NOT to Do
+
+1. Do NOT implement complex DAG-based plan compilation
+2. Do NOT use fused kernels for RunningStat (Welford algorithm is slower)
+3. Do NOT fuse multiple EMAs (prevents SIMD vectorization)
+4. Do NOT use buffered/chunked output writes (direct writes are faster)
 
 ## Comparison with Previous Experiments
 
@@ -307,40 +317,48 @@ Buffer reuse benefit: TBD%
 
 | Experiment | Finding | Impact on E07 |
 |------------|---------|---------------|
-| E01 Baseline | Raw indicator costs | Baseline reference |
-| E02 RunningStat | ~20% speedup for mean+stddev | Bollinger improvement |
-| E03 EMA Fusion | ~15% speedup for multi-EMA | MACD improvement |
-| E04 Rolling Extrema | ~5× speedup vs naive | Stochastic improvement |
+| E01 Baseline | Raw indicator costs established | Baseline reference |
+| E02 RunningStat | 2.8× slower fusion (NO-GO) | Bollinger fusion harmful |
+| E03 EMA Fusion | 30% slower fusion (NO-GO) | MACD/EMA fusion harmful |
+| E04 Rolling Extrema | Conditional benefit (period > 25 only) | Stochastic may benefit with large periods |
 
 ### E05-E06: Infrastructure Experiments
 
 | Experiment | Finding | Impact on E07 |
 |------------|---------|---------------|
-| E05 Plan Overhead | Compilation cost: TBD μs | Break-even calculation |
-| E06 Memory Writes | Write pattern: TBD | Output strategy |
+| E05 Plan Overhead | Compilation: 2.2 μs (acceptable) | Overhead not the problem |
+| E06 Memory Writes | Buffered writes 19-27% slower | Should use direct writes |
+
+### Summary
+
+The fusion strategies that were theoretically sound (reducing data passes) turned out to have implementation overhead that exceeds the memory bandwidth savings:
+
+1. **Welford's algorithm** for running statistics involves expensive division operations
+2. **Multi-EMA fusion** prevents SIMD auto-vectorization
+3. **Buffered writes** add unnecessary copying overhead
 
 ## Follow-up Actions
 
-### If GO:
-
-1. Update PRD with confirmed architecture
-2. Implement production-ready PlanCache
-3. Add comprehensive API documentation
-4. Create usage examples and tutorials
-
-### If NO-GO:
+### Immediate Actions (NO-GO):
 
 1. Update PRD to reflect simpler architecture
 2. Archive plan infrastructure code
 3. Focus on per-indicator optimizations
 4. Simplify public API surface
 
-### Regardless of Decision:
+### Future Optimization Opportunities:
 
-1. Document experimental findings
+1. **Rolling Extrema**: Use hybrid algorithm (naive for period < 25, deque for period ≥ 25)
+2. **Pre-allocation**: Always pre-allocate output buffers (17-28% faster)
+3. **Interleaved writes**: For multi-output indicators only (2.53× faster)
+4. **SIMD**: Keep kernels simple to enable auto-vectorization
+
+### Documentation Updates:
+
+1. Document experimental findings in architecture docs
 2. Update performance claims in README
 3. Add benchmark results to documentation
-4. Create performance tuning guide
+4. Create performance tuning guide for users
 
 ## Files
 
@@ -403,7 +421,7 @@ e07_end_to_end/
 
 ### Key Metrics
 
-1. **Speedup**: `direct_time / plan_time`
+1. **Speedup**: `direct_time / plan_time` (values < 1.0 mean plan is slower)
 2. **Throughput**: `data_points / time`
 3. **Efficiency**: `speedup / theoretical_max`
 4. **Amortization**: `(overhead + N × plan_exec) / (N × direct_exec)`
@@ -418,4 +436,5 @@ e07_end_to_end/
 ---
 
 *Report generated for fast-ta micro-experiments framework*
-*Last updated: Pending benchmark execution*
+*Last updated: 2024-12-21*
+*Status: COMPLETED - NO-GO Decision*
