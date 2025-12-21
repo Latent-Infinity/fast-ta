@@ -332,7 +332,7 @@ let results2 = plan.execute(&prices2)?;  // +0.4 ns overhead
 | E03 EMA Fusion | Fusion benefit | 30% SLOWER (no-go) | Would hurt break-even |
 | E04 Rolling Extrema | Algorithm choice | Conditional speedup | Improves break-even for large periods |
 | **E05 Plan Overhead** | **Infrastructure cost** | **2.2 μs** | **Numerator in break-even** |
-| E06 Memory Writes | Memory patterns | May affect plan execution | TBD |
+| E06 Memory Writes | Memory patterns | Write-every-bar optimal, no buffering needed | NO-GO (buffering), GO (interleaved) |
 | E07 End-to-End | Full comparison | Validates E05 predictions | Validates break-even |
 
 **Critical Finding**: E02-E03 fusion experiments showed NO fusion benefit (actually slower), which means plan mode won't break even without other optimizations. E04 shows conditional benefit for rolling extrema with large periods.
