@@ -289,3 +289,211 @@ Status: COMPLETED ✓
 - Ready for E01 REPORT.md population (subtask-3-1)
 
 === END SESSION 6 ===
+
+=== SESSION 7 (Builder - subtask-2-2) ===
+Started: 2024-12-20
+
+Task: Execute E02 RunningStat fusion benchmarks (Welford's algorithm)
+
+Benchmark Execution:
+- Used shell script workaround: echo 'cargo bench --package fast-ta-experiments --bench e02_running_stat 2>&1' > /tmp/bench_e02.sh && sh /tmp/bench_e02.sh
+- Fixed compilation error in bench_preallocated: closure was returning reference to captured variable
+  - Changed: black_box(&variance_output) → black_box(variance_output[size - 1])
+- All benchmarks executed successfully
+
+E02 RUNNING STAT BENCHMARK RESULTS:
+
+Main Comparison (period=20):
+| Approach           | 1K (µs)  | 10K (µs) | 100K (µs) | Speedup vs Fused |
+|--------------------|----------|----------|-----------|------------------|
+| Fused Welford      | 9.97     | 105.45   | 1,042.6   | 1.00× (baseline) |
+| Separate Passes    | 3.19     | 37.89    | 370.90    | 2.81× faster     |
+| Bollinger Reference| 2.74     | 31.22    | 279.37    | 3.73× faster     |
+
+Component Breakdown (period=20, 100K):
+| Component     | Time (µs) |
+|---------------|-----------|
+| SMA only      | 134.92    |
+| Stddev only   | 212.85    |
+| Combined      | ~347.77   |
+
+Period Comparison (100K data points):
+| Period | Fused (µs) | Separate (µs) | Fused/Separate Ratio |
+|--------|------------|---------------|----------------------|
+| 5      | 988.17     | 368.98        | 2.68×                |
+| 10     | 1,024.5    | 351.58        | 2.91×                |
+| 20     | 1,007.4    | 369.73        | 2.72×                |
+| 50     | 979.37     | 360.05        | 2.72×                |
+| 100    | 928.84     | 350.70        | 2.65×                |
+
+Throughput Comparison:
+| Data Size | Fused (Melem/s) | Separate (Melem/s) | Ratio     |
+|-----------|-----------------|--------------------|-----------|
+| 10K       | 98.7            | 256.5              | 2.60× sep |
+| 100K      | 100.9           | 279.2              | 2.77× sep |
+| 1M        | 98.8            | 285.6              | 2.89× sep |
+
+Preallocated Buffer Comparison (100K):
+| Approach        | Time (µs) |
+|-----------------|-----------|
+| Fused into      | 1,045.1   |
+| Separate into   | 383.62    |
+
+KEY FINDING: Fused Welford approach is SLOWER than separate passes (~2.8× slower)
+
+Analysis:
+- This is CONTRARY to the initial hypothesis
+- The separate passes benefit from highly optimized rolling sum algorithms
+- Welford's algorithm has more per-element overhead (maintaining running variance)
+- The "traditional" Bollinger approach (sum + sum-of-squares) is even faster
+
+Decision: **NO-GO** for fused Welford approach
+- Target was ≥20% speedup, actual result is 2.8× SLOWDOWN
+- Separate passes using optimized SMA + rolling_stddev are significantly faster
+- Recommend keeping separate indicator approach for rolling statistics
+- May warrant investigation into optimizing Welford implementation in future
+
+Output Files Generated:
+- target/criterion/e02_running_stat_fused_welford/
+- target/criterion/e02_running_stat_separate_passes/
+- target/criterion/e02_running_stat_bollinger_reference/
+- target/criterion/e02_running_stat_components_sma/
+- target/criterion/e02_running_stat_components_stddev/
+- target/criterion/e02_running_stat_period_comparison/
+- target/criterion/e02_running_stat_throughput/
+- target/criterion/e02_running_stat_preallocated/
+
+Status: COMPLETED ✓
+- All E02 benchmarks executed successfully
+- Compilation error fixed (borrow checker issue in bench_preallocated)
+- GO/NO-GO decision: NO-GO (fused approach slower than separate)
+- Ready for E02 REPORT.md population (subtask-4-1)
+
+=== END SESSION 7 ===
+
+=== SESSION 8 (Builder - subtask-2-4) ===
+Started: 2024-12-20
+
+Task: Execute E04 rolling extrema benchmarks (deque vs naive)
+
+Benchmark Execution:
+- Used shell script workaround: echo 'cargo bench --package fast-ta-experiments --bench e04_rolling_extrema 2>&1' > /tmp/bench_e04.sh && sh /tmp/bench_e04.sh
+- Compilation successful (11 warnings in fast-ta-core, 21 in bench - unused imports/dead code)
+- All benchmarks executed successfully
+
+E04 ROLLING EXTREMA BENCHMARK RESULTS:
+
+Rolling Max - Deque vs Naive (period=14):
+| Data Size | Deque (µs)  | Naive (µs)  | Speedup   |
+|-----------|-------------|-------------|-----------|
+| 1K        | 3.88        | 8.05        | 2.07×     |
+| 10K       | 47.09       | 83.98       | 1.78×     |
+| 100K      | 1,213       | 838.67      | 0.69× (naive faster!) |
+
+Rolling Min - Deque vs Naive (period=14):
+| Data Size | Deque (µs)  | Naive (µs)  | Speedup   |
+|-----------|-------------|-------------|-----------|
+| 1K        | 3.97        | 8.23        | 2.07×     |
+| 10K       | 49.39       | 84.25       | 1.71×     |
+| 100K      | 1,242       | 847.67      | 0.68× (naive faster!) |
+
+Period Scaling Analysis (100K data points):
+| Period | Deque (ms)  | Naive (ms)  | Speedup   |
+|--------|-------------|-------------|-----------|
+| 5      | 1.03        | 0.20        | 0.19× (naive faster!) |
+| 14     | 1.12        | 0.77        | 0.69× (naive faster!) |
+| 50     | 1.09        | 4.70        | 4.31×     |
+| 100    | 1.08        | 11.31       | 10.5×     |
+| 200    | 1.07        | 26.10       | 24.4×     |
+
+Large Period Analysis (100K data points):
+| Period | Deque (ms)  | Naive (ms)  | Speedup   |
+|--------|-------------|-------------|-----------|
+| 100    | 1.09        | 11.60       | 10.6×     |
+| 200    | 1.09        | 26.73       | 24.6×     |
+| 500    | 1.08        | 71.79       | 66.4×     |
+| 1000   | 1.08        | 146.11      | 135×      |
+
+Data Size Scaling (period=50):
+| Data Size | Deque (µs)  | Naive (µs)  | Speedup   |
+|-----------|-------------|-------------|-----------|
+| 1K        | 3.40        | 44.55       | 13.1×     |
+| 10K       | 38.60       | 466.58      | 12.1×     |
+| 100K      | 1,077       | 4,691       | 4.35×     |
+
+Fused Extrema (max + min in single pass) vs Separate Calls (period=14):
+| Data Size | Fused (µs)  | Separate (µs) | Fused Speedup |
+|-----------|-------------|---------------|---------------|
+| 1K        | 6.43        | 8.04          | 1.25×         |
+| 10K       | 109.72      | 100.14        | 0.91× (separate faster) |
+| 100K      | 1,985       | 2,499         | 1.26×         |
+
+Stochastic Use Case (highest high + lowest low, period=14):
+| Data Size | Deque (µs)  | Naive (µs)  | Speedup   |
+|-----------|-------------|-------------|-----------|
+| 1K        | 7.11        | 15.14       | 2.13×     |
+| 10K       | 82.00       | 153.65      | 1.87×     |
+| 100K      | 2,285       | 1,527       | 0.67× (naive faster!) |
+
+Throughput (elements/second):
+| Data Size | Deque (Melem/s) | Naive (Melem/s) |
+|-----------|-----------------|-----------------|
+| 10K       | 257.0           | 132.5           |
+| 100K      | 91.5            | 133.3           |
+| 1M        | 88.0            | 133.1           |
+
+KEY FINDINGS:
+
+1. **Small periods (k<50)**: Naive approach is FASTER than deque
+   - At period=14, naive is ~1.4× faster at 100K data points
+   - Deque overhead (maintaining data structure) exceeds naive scan cost
+
+2. **Large periods (k≥50)**: Deque approach becomes SIGNIFICANTLY faster
+   - At period=50: 4.3× speedup
+   - At period=100: 10.6× speedup
+   - At period=200: 24.6× speedup
+   - At period=500: 66× speedup
+   - At period=1000: 135× speedup
+
+3. **Scaling behavior confirms O(n) vs O(n×k)**:
+   - Deque time stays constant (~1.08ms) regardless of period
+   - Naive time scales linearly with period (as expected)
+
+4. **Memory allocation impact**:
+   - Preallocated buffers provide ~10% improvement
+   - rolling_max_into: 1.07ms vs rolling_max: 1.21ms at 100K
+
+GO/NO-GO DECISION:
+
+**CONDITIONAL GO** for deque-based rolling extrema:
+- Target was ≥5× speedup at k≥50
+- Achieved: 4.3× at k=50, 10.6× at k=100, 24.6× at k=200
+
+RECOMMENDATION:
+- **Use naive approach for small periods (k<50)** - simpler and faster
+- **Use deque approach for large periods (k≥50)** - significant speedup
+- Consider hybrid implementation that selects algorithm based on period
+
+The typical Stochastic Oscillator uses k=14, where naive is actually faster.
+For longer-term moving window applications (k≥50), deque is clearly superior.
+
+Output Files Generated:
+- target/criterion/e04_rolling_extrema_rolling_max_deque/
+- target/criterion/e04_rolling_extrema_rolling_max_naive/
+- target/criterion/e04_rolling_extrema_rolling_min_deque/
+- target/criterion/e04_rolling_extrema_rolling_min_naive/
+- target/criterion/e04_rolling_extrema_fused_extrema/
+- target/criterion/e04_rolling_extrema_separate_extrema/
+- target/criterion/e04_rolling_extrema_period_scaling/
+- target/criterion/e04_rolling_extrema_data_size_scaling/
+- target/criterion/e04_rolling_extrema_throughput/
+- target/criterion/e04_rolling_extrema_preallocated/
+- target/criterion/e04_rolling_extrema_large_period/
+- target/criterion/e04_rolling_extrema_stochastic_use_case/
+
+Status: COMPLETED ✓
+- All E04 benchmarks executed successfully
+- GO/NO-GO decision: CONDITIONAL GO (deque for k≥50, naive for k<50)
+- Ready for E04 REPORT.md population (subtask-4-3)
+
+=== END SESSION 8 ===

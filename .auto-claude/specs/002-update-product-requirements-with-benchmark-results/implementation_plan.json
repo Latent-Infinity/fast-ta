@@ -87,8 +87,9 @@
             "command": "cargo bench --package fast-ta-experiments --bench e02_running_stat",
             "expected": "Benchmark completes, HTML report generated in target/criterion/e02_running_stat/"
           },
-          "status": "pending",
-          "notes": "Compares fused vs separate passes for mean/variance/stddev. Target: \u226520% speedup."
+          "status": "completed",
+          "notes": "E02 RunningStat fusion benchmarks executed successfully. Fixed compilation error in bench_preallocated (borrow checker issue). Key finding: Fused Welford approach is ~2.8\u00d7 SLOWER than separate passes. Decision: NO-GO for fused Welford approach. Benchmark results saved in target/criterion/e02_running_stat_*/",
+          "updated_at": "2025-12-21T06:39:42.181911+00:00"
         },
         {
           "id": "subtask-2-3",
@@ -104,8 +105,9 @@
             "command": "cargo bench --package fast-ta-experiments --bench e03_ema_fusion",
             "expected": "Benchmark completes, HTML report generated in target/criterion/e03_ema_fusion/"
           },
-          "status": "pending",
-          "notes": "Compares fused multi-EMA vs separate EMA calls. Target: \u226515% speedup for \u226510 EMAs."
+          "status": "completed",
+          "notes": "E03 EMA fusion benchmarks completed successfully. Fixed closure lifetime issue in bench_preallocated. All benchmark groups generated HTML reports in target/criterion/e03_ema_fusion*/ directories. Key findings: Fused approaches show benefits for small EMA counts (3, 5) but separate approach is faster for larger counts (10, 20 EMAs) - interesting result suggesting the fusion overhead may not scale well.",
+          "updated_at": "2025-12-21T06:54:38.047782+00:00"
         },
         {
           "id": "subtask-2-4",
@@ -121,8 +123,9 @@
             "command": "cargo bench --package fast-ta-experiments --bench e04_rolling_extrema",
             "expected": "Benchmark completes, HTML report generated in target/criterion/e04_rolling_extrema/"
           },
-          "status": "pending",
-          "notes": "Compares O(n) deque algorithm vs O(n\u00d7k) naive scan. Target: \u22655\u00d7 speedup at k\u226550."
+          "status": "completed",
+          "notes": "E04 rolling extrema benchmarks executed successfully. Key findings: Naive approach faster for small periods (k<50), deque approach significantly faster for large periods (k\u226550). At k=50: 4.3\u00d7 speedup, at k=100: 10.6\u00d7, at k=200: 24.6\u00d7, at k=1000: 135\u00d7. GO/NO-GO decision: CONDITIONAL GO - use naive for k<50, deque for k\u226550. HTML reports generated in target/criterion/e04_rolling_extrema_*/",
+          "updated_at": "2025-12-21T07:08:35.395899+00:00"
         },
         {
           "id": "subtask-2-5",
@@ -582,5 +585,5 @@
     }
   },
   "qa_signoff": null,
-  "last_updated": "2025-12-21T06:29:51.301173+00:00"
+  "last_updated": "2025-12-21T07:08:35.395907+00:00"
 }
