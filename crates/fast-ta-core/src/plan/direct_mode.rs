@@ -629,7 +629,7 @@ impl DirectExecutor {
             IndicatorKind::BollingerBands => {
                 let mult = T::from(request.multiplier.unwrap_or(2.0))
                     .ok_or_else(|| Error::NumericConversion {
-                        context: "Bollinger multiplier".to_string(),
+                        context: "Bollinger multiplier",
                     })?;
                 Ok(IndicatorResult::Bollinger(bollinger(data, request.period, mult)?))
             }
@@ -639,10 +639,7 @@ impl DirectExecutor {
                 // we compute them using the basic approach
                 Err(Error::InvalidPeriod {
                     period: request.period,
-                    reason: format!(
-                        "{} requires DEMA/TEMA kernel which is not available in direct mode for single series",
-                        request.kind.name()
-                    ),
+                    reason: "DEMA/TEMA kernel not available in direct mode for single series",
                 })
             }
 
@@ -653,10 +650,7 @@ impl DirectExecutor {
             | IndicatorKind::StochasticSlow
             | IndicatorKind::StochasticFull => Err(Error::InvalidPeriod {
                 period: request.period,
-                reason: format!(
-                    "{} requires OHLCV data, use execute_ohlcv instead",
-                    request.kind.name()
-                ),
+                reason: "requires OHLCV data, use execute_ohlcv instead",
             }),
 
             // Kernel operations
@@ -664,16 +658,13 @@ impl DirectExecutor {
                 // These are kernel operations, not typically used as standalone indicators
                 Err(Error::InvalidPeriod {
                     period: request.period,
-                    reason: format!(
-                        "{} is a kernel operation, not a standalone indicator",
-                        request.kind.name()
-                    ),
+                    reason: "kernel operation, not a standalone indicator",
                 })
             }
 
             IndicatorKind::Custom => Err(Error::InvalidPeriod {
                 period: request.period,
-                reason: "Custom indicators are not supported in direct mode".to_string(),
+                reason: "Custom indicators are not supported in direct mode",
             }),
         }
     }
@@ -711,7 +702,7 @@ impl DirectExecutor {
             IndicatorKind::BollingerBands => {
                 let mult = T::from(request.multiplier.unwrap_or(2.0))
                     .ok_or_else(|| Error::NumericConversion {
-                        context: "Bollinger multiplier".to_string(),
+                        context: "Bollinger multiplier",
                     })?;
                 Ok(IndicatorResult::Bollinger(bollinger(
                     ohlcv.close,

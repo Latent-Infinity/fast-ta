@@ -332,7 +332,7 @@ impl PlanExecutor {
         let hundred = T::from(100.0).unwrap();
 
         for i in 13..n {
-            let highest = extrema[i];
+            let highest = extrema.max[i];
             let lowest = low_extrema[i];
             let range = highest - lowest;
 
@@ -404,7 +404,7 @@ impl PlanExecutor {
                 // Use running_stats fusion for mean + stddev
                 let mult = T::from(request.multiplier.unwrap_or(2.0))
                     .ok_or_else(|| Error::NumericConversion {
-                        context: "Bollinger multiplier".to_string(),
+                        context: "Bollinger multiplier",
                     })?;
 
                 let stats = rolling_stats(data, request.period)?;
@@ -444,10 +444,7 @@ impl PlanExecutor {
             | IndicatorKind::StochasticSlow
             | IndicatorKind::StochasticFull => Err(Error::InvalidPeriod {
                 period: request.period,
-                reason: format!(
-                    "{} requires OHLCV data, use execute_ohlcv instead",
-                    request.kind.name()
-                ),
+                reason: "requires OHLCV data, use execute_ohlcv instead",
             }),
 
             // Kernel operations
@@ -468,7 +465,7 @@ impl PlanExecutor {
 
             IndicatorKind::Custom => Err(Error::InvalidPeriod {
                 period: request.period,
-                reason: "Custom indicators are not supported in plan mode".to_string(),
+                reason: "Custom indicators are not supported in plan mode",
             }),
         }
     }
@@ -516,7 +513,7 @@ impl PlanExecutor {
             IndicatorKind::BollingerBands => {
                 let mult = T::from(request.multiplier.unwrap_or(2.0))
                     .ok_or_else(|| Error::NumericConversion {
-                        context: "Bollinger multiplier".to_string(),
+                        context: "Bollinger multiplier",
                     })?;
 
                 let stats = rolling_stats(ohlcv.close, request.period)?;

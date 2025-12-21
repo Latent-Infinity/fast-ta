@@ -372,18 +372,18 @@ impl Registry {
         let config_key = spec.config_key();
 
         // Check if an equivalent indicator already exists
-        if let Some(existing_id) = self.config_index.get(&config_key) {
-            return existing_id;
+        if self.config_index.contains_key(&config_key) {
+            return self.config_index.get(&config_key).unwrap();
         }
 
         // Register new indicator
         let id = id.into();
-        self.config_index.insert(config_key, id.clone());
-        self.indicators.insert(id.clone(), spec);
+        self.config_index.insert(config_key.clone(), id.clone());
+        self.indicators.insert(id, spec);
 
         // Return a reference to the ID stored in config_index
         // SAFETY: We just inserted this key, so it must exist
-        self.config_index.get(&self.indicators.get(&id).unwrap().config_key()).unwrap()
+        self.config_index.get(&config_key).unwrap()
     }
 
     /// Clears all registered indicators.

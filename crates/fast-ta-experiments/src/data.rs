@@ -209,9 +209,9 @@ pub fn generate_random_walk_with_params(
 
     for _ in 1..n {
         // Generate standard normal using Box-Muller transform
-        let u1: f64 = rng.random();
-        let u2: f64 = rng.random();
-        let z = (-2.0 * u1.ln()).sqrt() * (2.0 * std::f64::consts::PI * u2).cos();
+        let u1: f64 = rng.gen();
+        let u2: f64 = rng.gen();
+        let z = (-2.0_f64 * u1.ln()).sqrt() * (2.0_f64 * std::f64::consts::PI * u2).cos();
 
         // Apply geometric Brownian motion
         let return_pct = drift + volatility * z;
@@ -291,14 +291,14 @@ pub fn generate_ohlcv_with_params(
 
     for _ in 0..n {
         // Generate multiple random values for the bar
-        let u1: f64 = rng.random();
-        let u2: f64 = rng.random();
-        let u3: f64 = rng.random();
-        let u4: f64 = rng.random();
-        let u5: f64 = rng.random();
+        let u1: f64 = rng.gen();
+        let u2: f64 = rng.gen();
+        let u3: f64 = rng.gen();
+        let u4: f64 = rng.gen();
+        let u5: f64 = rng.gen();
 
         // Generate return using Box-Muller
-        let z1 = (-2.0 * u1.ln()).sqrt() * (2.0 * std::f64::consts::PI * u2).cos();
+        let z1 = (-2.0_f64 * u1.ln()).sqrt() * (2.0_f64 * std::f64::consts::PI * u2).cos();
 
         // Open is typically near previous close with small gap
         let gap_factor = (u3 - 0.5) * volatility * 0.5;
@@ -388,7 +388,7 @@ pub fn inject_nans(series: &[f64], ratio: f64, seed: u64) -> Vec<f64> {
     let mut result = Vec::with_capacity(series.len());
 
     for &value in series {
-        let r: f64 = rng.random();
+        let r: f64 = rng.gen();
         if r < ratio {
             result.push(f64::NAN);
         } else {
@@ -428,7 +428,7 @@ pub fn inject_nans_ohlcv(ohlcv: &Ohlcv, ratio: f64, seed: u64) -> Ohlcv {
     let mut result = Ohlcv::with_capacity(ohlcv.len());
 
     for i in 0..ohlcv.len() {
-        let r: f64 = rng.random();
+        let r: f64 = rng.gen();
         if r < ratio {
             result.open.push(f64::NAN);
             result.high.push(f64::NAN);
@@ -480,9 +480,9 @@ pub fn generate_trending_series(n: usize, seed: u64, trend_strength: f64) -> Vec
     prices.push(price);
 
     for _ in 1..n {
-        let u1: f64 = rng.random();
-        let u2: f64 = rng.random();
-        let z = (-2.0 * u1.ln()).sqrt() * (2.0 * std::f64::consts::PI * u2).cos();
+        let u1: f64 = rng.gen();
+        let u2: f64 = rng.gen();
+        let z = (-2.0_f64 * u1.ln()).sqrt() * (2.0_f64 * std::f64::consts::PI * u2).cos();
 
         let return_pct = base_drift + volatility * z;
         price *= 1.0 + return_pct;
@@ -528,9 +528,9 @@ pub fn generate_mean_reverting_series(
     prices.push(price);
 
     for _ in 1..n {
-        let u1: f64 = rng.random();
-        let u2: f64 = rng.random();
-        let z = (-2.0 * u1.ln()).sqrt() * (2.0 * std::f64::consts::PI * u2).cos();
+        let u1: f64 = rng.gen();
+        let u2: f64 = rng.gen();
+        let z = (-2.0_f64 * u1.ln()).sqrt() * (2.0_f64 * std::f64::consts::PI * u2).cos();
 
         // Mean reversion component
         let mean_reversion = (mean - price) * reversion;
