@@ -120,8 +120,9 @@ impl PlanExecutor {
         }
 
         // Group requests by type for fusion opportunities
-        let mut ema_periods: Vec<(usize, usize)> = Vec::new(); // (request_idx, period)
-        let mut other_requests: Vec<(usize, &IndicatorRequest)> = Vec::new();
+        // Pre-allocate with capacity - worst case all requests are one type
+        let mut ema_periods: Vec<(usize, usize)> = Vec::with_capacity(requests.len()); // (request_idx, period)
+        let mut other_requests: Vec<(usize, &IndicatorRequest)> = Vec::with_capacity(requests.len());
 
         for (idx, request) in requests.iter().enumerate() {
             match request.kind {
@@ -138,7 +139,8 @@ impl PlanExecutor {
 
         // Fused EMA computation
         if !ema_periods.is_empty() {
-            let periods: Vec<usize> = ema_periods.iter().map(|(_, p)| *p).collect();
+            let mut periods: Vec<usize> = Vec::with_capacity(ema_periods.len());
+            periods.extend(ema_periods.iter().map(|(_, p)| *p));
             let ema_results = ema_multi(data, &periods)?;
 
             for (i, (request_idx, _)) in ema_periods.iter().enumerate() {
@@ -216,8 +218,9 @@ impl PlanExecutor {
         }
 
         // Group EMA requests for fusion
-        let mut ema_periods: Vec<(usize, usize)> = Vec::new();
-        let mut other_requests: Vec<(usize, &IndicatorRequest)> = Vec::new();
+        // Pre-allocate with capacity - worst case all requests are one type
+        let mut ema_periods: Vec<(usize, usize)> = Vec::with_capacity(requests.len());
+        let mut other_requests: Vec<(usize, &IndicatorRequest)> = Vec::with_capacity(requests.len());
 
         for (idx, request) in requests.iter().enumerate() {
             match request.kind {
@@ -234,7 +237,8 @@ impl PlanExecutor {
 
         // Fused EMA computation on close prices
         if !ema_periods.is_empty() {
-            let periods: Vec<usize> = ema_periods.iter().map(|(_, p)| *p).collect();
+            let mut periods: Vec<usize> = Vec::with_capacity(ema_periods.len());
+            periods.extend(ema_periods.iter().map(|(_, p)| *p));
             let ema_results = ema_multi(ohlcv.close, &periods)?;
 
             for (i, (request_idx, _)) in ema_periods.iter().enumerate() {
