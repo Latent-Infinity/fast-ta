@@ -2,6 +2,31 @@
 //!
 //! This module defines the traits used throughout the fast-ta library
 //! for generic numeric operations on data series.
+//!
+//! # Overview
+//!
+//! The primary trait is [`SeriesElement`], which provides a common interface
+//! for numeric operations on time series data, abstracting over `f32` and `f64`
+//! types. The module also provides validation utilities through [`ValidatedInput`]
+//! and standalone validation functions.
+//!
+//! # Example
+//!
+//! ```
+//! use fast_ta_core::traits::{SeriesElement, ValidatedInput, validate_indicator_input};
+//!
+//! fn compute_weighted_sum<T: SeriesElement>(data: &[T], period: usize) -> fast_ta_core::error::Result<T> {
+//!     validate_indicator_input(data, period)?;
+//!
+//!     let period_t = T::from_usize(period)?;
+//!     let sum: T = data.iter().take(period).fold(T::zero(), |acc, &x| acc + x);
+//!     Ok(sum / period_t)
+//! }
+//!
+//! let data = vec![1.0_f64, 2.0, 3.0, 4.0, 5.0];
+//! let result = compute_weighted_sum(&data, 3).unwrap();
+//! assert!((result - 2.0).abs() < 1e-10);
+//! ```
 
 use num_traits::{Float, NumCast};
 
@@ -45,6 +70,7 @@ pub trait SeriesElement: Float + NumCast + Copy + Default + Send + Sync + 'stati
     /// # Errors
     ///
     /// Returns `Error::NumericConversion` if the value cannot be represented in this type.
+    #[inline]
     fn from_usize(value: usize) -> Result<Self> {
         <Self as NumCast>::from(value).ok_or(Error::NumericConversion {
             context: "usize to series element",
@@ -56,6 +82,7 @@ pub trait SeriesElement: Float + NumCast + Copy + Default + Send + Sync + 'stati
     /// # Errors
     ///
     /// Returns `Error::NumericConversion` if the value cannot be represented in this type.
+    #[inline]
     fn from_i32(value: i32) -> Result<Self> {
         <Self as NumCast>::from(value).ok_or(Error::NumericConversion {
             context: "i32 to series element",
@@ -67,6 +94,7 @@ pub trait SeriesElement: Float + NumCast + Copy + Default + Send + Sync + 'stati
     /// # Errors
     ///
     /// Returns `Error::NumericConversion` if the value cannot be represented in this type.
+    #[inline]
     fn from_f64(value: f64) -> Result<Self> {
         <Self as NumCast>::from(value).ok_or(Error::NumericConversion {
             context: "f64 to series element",
@@ -76,6 +104,8 @@ pub trait SeriesElement: Float + NumCast + Copy + Default + Send + Sync + 'stati
     /// Returns the constant 2 as this type.
     ///
     /// This is commonly used in EMA calculations: `alpha = 2 / (period + 1)`.
+    #[inline]
+    #[must_use]
     fn two() -> Self {
         // Safe unwrap: 2 is always representable in Float types
         <Self as NumCast>::from(2).unwrap()
@@ -97,6 +127,8 @@ pub trait ValidatedInput {
     fn len(&self) -> usize;
 
     /// Returns true if the series is empty.
+    #[inline]
+    #[must_use]
     fn is_empty(&self) -> bool {
         self.len() == 0
     }
@@ -106,6 +138,7 @@ pub trait ValidatedInput {
     /// # Errors
     ///
     /// Returns `Error::InsufficientData` if the series is shorter than `min_length`.
+    #[inline]
     fn validate_min_length(&self, min_length: usize) -> Result<()> {
         if self.len() < min_length {
             Err(Error::InsufficientData {
@@ -122,6 +155,7 @@ pub trait ValidatedInput {
     /// # Errors
     ///
     /// Returns `Error::EmptyInput` if the series is empty.
+    #[inline]
     fn validate_not_empty(&self) -> Result<()> {
         if self.is_empty() {
             Err(Error::EmptyInput)
@@ -135,6 +169,7 @@ pub trait ValidatedInput {
 impl<T: SeriesElement> ValidatedInput for [T] {
     type Element = T;
 
+    #[inline]
     fn len(&self) -> usize {
         self.len()
     }
@@ -144,6 +179,7 @@ impl<T: SeriesElement> ValidatedInput for [T] {
 impl<T: SeriesElement> ValidatedInput for Vec<T> {
     type Element = T;
 
+    #[inline]
     fn len(&self) -> usize {
         self.len()
     }
@@ -154,6 +190,7 @@ impl<T: SeriesElement> ValidatedInput for Vec<T> {
 /// # Errors
 ///
 /// Returns `Error::InvalidPeriod` if the period is zero.
+#[inline]
 pub fn validate_period(period: usize) -> Result<()> {
     if period == 0 {
         Err(Error::InvalidPeriod {
@@ -168,13 +205,17 @@ pub fn validate_period(period: usize) -> Result<()> {
 /// Validates that input data is suitable for indicator computation.
 ///
 /// This function performs the following checks:
-/// 1. The data is not empty
-/// 2. The data has at least `min_length` elements
-/// 3. The period is valid (non-zero)
+/// 1. The period is valid (non-zero)
+/// 2. The data is not empty
+/// 3. The data has at least `period` elements
 ///
 /// # Errors
 ///
-/// Returns an appropriate error if any validation fails.
+/// Returns an appropriate error if any validation fails:
+/// - `Error::InvalidPeriod` if the period is zero
+/// - `Error::EmptyInput` if the data is empty
+/// - `Error::InsufficientData` if data length is less than the period
+#[inline]
 pub fn validate_indicator_input<T: SeriesElement>(
     data: &[T],
     period: usize,
