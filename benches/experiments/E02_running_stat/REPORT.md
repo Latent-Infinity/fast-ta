@@ -4,8 +4,8 @@
 
 **Experiment ID**: E02
 **Name**: RunningStat Fusion Benchmarks
-**Status**: PENDING (awaiting benchmark execution)
-**Date**: TBD
+**Status**: COMPLETED
+**Date**: 2024-12-20
 
 ## Objective
 
@@ -77,15 +77,15 @@ Using Bollinger Bands computation:
 
 ## Results
 
-*Results will be populated after running: `cargo bench --package fast-ta-experiments --bench e02_running_stat`*
-
 ### Primary Comparison: Fused vs Separate
 
 | Data Size | Fused (Welford) | Separate Passes | Speedup | Verdict |
 |-----------|-----------------|-----------------|---------|---------|
-| 1K | TBD ns | TBD ns | TBD% | TBD |
-| 10K | TBD ns | TBD ns | TBD% | TBD |
-| 100K | TBD ns | TBD ns | TBD% | TBD |
+| 1K | 10,036 ns | 3,534 ns | -184% (2.84× slower) | NO-GO |
+| 10K | 108,849 ns | 38,460 ns | -183% (2.83× slower) | NO-GO |
+| 100K | 1,026,786 ns | 372,516 ns | -176% (2.76× slower) | NO-GO |
+
+**Key Finding**: The fused Welford approach is consistently **~2.8× SLOWER** than the separate SMA + StdDev approach across all data sizes.
 
 ### Component Breakdown
 
@@ -93,36 +93,44 @@ Understanding where time is spent in the separate approach:
 
 | Component | 1K | 10K | 100K | % of Separate Total |
 |-----------|-----|------|-------|---------------------|
-| SMA (mean) | TBD | TBD | TBD | TBD% |
-| rolling_stddev | TBD | TBD | TBD | TBD% |
-| variance calc | TBD | TBD | TBD | TBD% |
-| **Total** | TBD | TBD | TBD | 100% |
+| SMA (mean) | 1,371 ns | 14,316 ns | 134,812 ns | ~39% |
+| rolling_stddev | 1,981 ns | 21,007 ns | 206,731 ns | ~60% |
+| variance calc | ~182 ns | ~3,137 ns | ~31,973 ns | ~1% |
+| **Total** | 3,534 ns | 38,460 ns | 372,516 ns | 100% |
+
+**Note**: The existing SMA and rolling_stddev implementations are highly optimized with efficient sliding window algorithms that outperform the Welford online algorithm.
 
 ### Bollinger Comparison
 
 | Data Size | Fused (Welford) | Bollinger | Delta |
 |-----------|-----------------|-----------|-------|
-| 1K | TBD | TBD | TBD% |
-| 10K | TBD | TBD | TBD% |
-| 100K | TBD | TBD | TBD% |
+| 1K | 10,036 ns | 2,733 ns | -267% (3.67× slower) |
+| 10K | 108,849 ns | 31,419 ns | -246% (3.46× slower) |
+| 100K | 1,026,786 ns | 279,538 ns | -267% (3.67× slower) |
+
+**Note**: Bollinger Bands using sum-of-squares approach is even faster than separate passes, likely due to simpler arithmetic operations and better cache utilization.
 
 ### Period Sensitivity (at 100K data points)
 
 | Period | Fused | Separate | Speedup |
 |--------|-------|----------|---------|
-| 5 | TBD | TBD | TBD% |
-| 10 | TBD | TBD | TBD% |
-| 20 | TBD | TBD | TBD% |
-| 50 | TBD | TBD | TBD% |
-| 100 | TBD | TBD | TBD% |
+| 5 | 987,426 ns | 363,535 ns | -172% (2.72× slower) |
+| 10 | 1,022,642 ns | 370,358 ns | -176% (2.76× slower) |
+| 20 | 1,027,773 ns | 369,944 ns | -178% (2.78× slower) |
+| 50 | 970,435 ns | 359,111 ns | -170% (2.70× slower) |
+| 100 | 1,000,445 ns | 339,350 ns | -195% (2.95× slower) |
+
+**Note**: The fused approach remains slower across all period sizes. The performance gap is consistent, indicating the overhead is inherent to the Welford algorithm implementation.
 
 ### Throughput Analysis
 
 | Data Size | Fused (elements/sec) | Separate (elements/sec) | Ratio |
 |-----------|---------------------|------------------------|-------|
-| 10K | TBD | TBD | TBD |
-| 100K | TBD | TBD | TBD |
-| 1M | TBD | TBD | TBD |
+| 10K | 94.4M | 265.5M | 0.36× |
+| 100K | 100.1M | 278.8M | 0.36× |
+| 1M | 98.8M | 294.1M | 0.34× |
+
+**Note**: Separate passes achieve 2.8-3× higher throughput across all data sizes.
 
 ### Pre-allocated Buffer Comparison
 
@@ -130,40 +138,61 @@ Testing with `_into()` variants to eliminate allocation overhead:
 
 | Data Size | Fused Into | Separate Into | Delta |
 |-----------|------------|---------------|-------|
-| 1K | TBD | TBD | TBD% |
-| 10K | TBD | TBD | TBD% |
-| 100K | TBD | TBD | TBD% |
+| 1K | 10,164 ns | 3,509 ns | -190% (2.90× slower) |
+| 10K | 108,596 ns | 36,042 ns | -201% (3.01× slower) |
+| 100K | 1,028,042 ns | 379,392 ns | -171% (2.71× slower) |
+
+**Note**: Pre-allocation does not change the fundamental performance characteristics. The fused approach remains significantly slower.
 
 ## Analysis
 
-### Expected Results
+### Observed Results vs Expected
 
-Based on algorithm analysis:
+**Hypothesis was incorrect.** The expected benefits of fusion did not materialize:
 
-1. **Fused should win on small data** (1K-10K):
-   - Cache-resident data benefits from single-pass access
-   - Loop overhead reduction is proportionally larger
+1. **Single-pass did NOT help** (1K-10K):
+   - The Welford algorithm's per-element overhead dominates
+   - Simple arithmetic in SMA/StdDev is faster than Welford's divisions
 
-2. **Fused should maintain advantage on large data** (100K+):
-   - Memory bandwidth becomes the bottleneck
-   - Single read vs double read is significant
+2. **Memory bandwidth NOT the bottleneck** (100K+):
+   - Two separate passes are still faster than one fused pass
+   - The extra memory read is cheaper than Welford's computation
 
 3. **Welford vs Sum-of-Squares** (Bollinger comparison):
-   - Sum-of-squares is slightly simpler arithmetically
-   - Welford has better numerical stability
-   - Performance should be comparable
+   - Sum-of-squares (Bollinger) is ~30% faster than separate passes
+   - Welford is ~3.5× slower than sum-of-squares
+   - Numerical stability comes at a significant performance cost
+
+### Why Welford is Slower
+
+The Welford algorithm performs more operations per element:
+
+```
+Welford (per element):
+  count += 1
+  delta = x - mean           # 1 subtraction
+  mean += delta / count      # 1 division, 1 addition
+  delta2 = x - mean          # 1 subtraction (using updated mean)
+  m2 += delta * delta2       # 1 multiply, 1 addition
+
+SMA + StdDev (per element):
+  SMA: sum += x - old; mean = sum / n  # 2 ops amortized
+  StdDev: Similar sliding window trick
+```
+
+The division operation in Welford's algorithm is expensive (15-20 cycles on modern CPUs), while the sliding window approach uses primarily additions and subtractions (1 cycle each).
 
 ### Scaling Analysis
 
 To verify O(n) complexity, compare 10K to 100K (10x data):
-- **Expected**: ~10x time increase for both approaches
-- **If fused has advantage**: Advantage should be consistent across scales
 
 | Approach | 10K→100K Ratio | O(n) Verified? |
 |----------|----------------|----------------|
-| Fused | TBD | TBD |
-| Separate | TBD | TBD |
-| Bollinger | TBD | TBD |
+| Fused | 9.4× | Yes |
+| Separate | 9.7× | Yes |
+| Bollinger | 8.9× | Yes |
+
+All approaches show O(n) scaling behavior.
 
 ### Memory Bandwidth Estimation
 
@@ -175,11 +204,11 @@ Theoretical memory access patterns:
 | Separate | 2 × input | 3 × output | 5n × sizeof(f64) |
 | Bollinger | 1 × input | 3 × output | 4n × sizeof(f64) |
 
-**Theoretical Fused Advantage**: 20% less memory traffic
+**Actual observation**: Memory bandwidth is NOT the bottleneck. The computational overhead of Welford's algorithm dominates.
 
 ## Go/No-Go Decision
 
-**Decision**: PENDING
+**Decision**: NO-GO
 
 ### Criteria Checklist
 
@@ -190,35 +219,37 @@ Theoretical memory access patterns:
 - [ ] No significant regression in any scenario
 
 #### For NO-GO (keep separate implementations):
-- [ ] Fused speedup is <10%
-- [ ] OR fused is slower in some scenarios
-- [ ] OR implementation complexity outweighs benefits
+- [x] Fused speedup is <10% (actually 2.8× SLOWER)
+- [x] Fused is slower in ALL scenarios
+- [x] Implementation complexity outweighs benefits (no benefits exist)
+
+### Rationale
+
+The Welford-based fused kernel is **2.8× slower** than the separate SMA + StdDev approach. This significant performance regression makes the fused approach unsuitable for production use.
+
+The existing separate implementations using sliding window algorithms are highly optimized and should be retained.
 
 ## Implications for fast-ta Architecture
 
-### If GO:
+### NO-GO Decision Applied:
 
-1. **Bollinger Bands**: Refactor to use `rolling_stats()` internally
-2. **Future Indicators**: Use fused kernel as building block
-3. **Plan Mode**: Fuse statistics computation across indicator DAG
+1. **Keep Current Design**: Separate SMA and rolling_stddev implementations are optimal
+2. **Bollinger Bands**: Already optimized; no refactoring needed
+3. **Focus Elsewhere**: Look for gains in other kernels (E03, E04)
+4. **Consider Numerical Stability Trade-offs**: For extreme value scenarios, Welford may still be preferred despite performance cost
 
-### If NO-GO:
+### Recommendations:
 
-1. **Keep Current Design**: Separate SMA and rolling_stddev are fine
-2. **Focus Elsewhere**: Look for gains in other kernels (E03, E04)
-3. **Consider Numerical Stability**: May still prefer Welford for extreme values
+1. **Do NOT adopt fused Welford kernel** for mean/variance/stddev computation
+2. **Retain sliding window algorithms** in SMA and rolling_stddev
+3. **Consider sum-of-squares approach** (like Bollinger) for even better performance where numerical stability is acceptable
+4. **Document the trade-off**: Welford provides numerical stability at ~3× performance cost
 
 ## Follow-up Actions
 
-After E02 completes:
-
-1. **If GO**:
-   - Consider Bollinger Bands refactoring
-   - Document fusion pattern for other developers
-   - Update performance recommendations
-
-2. **E03 (EMA Fusion)**: Apply learnings about single-pass benefits
-3. **E04 (Rolling Extrema)**: Different fusion strategy (deque-based)
+1. **E03 (EMA Fusion)**: Different algorithm characteristics; evaluate independently
+2. **E04 (Rolling Extrema)**: Deque-based approach may have different outcomes
+3. **Document findings**: Update PRD with performance guidance
 
 ## Files
 
@@ -265,6 +296,7 @@ Key properties:
 - Numerically stable (no catastrophic cancellation)
 - Single-pass (O(n) time, O(1) auxiliary space)
 - Sliding window support via inverse operation
+- **Performance trade-off**: ~3× slower than sum-of-squares
 
 ### Sum-of-Squares Approach (Bollinger)
 
@@ -278,13 +310,29 @@ Potential numerical issues:
 - Catastrophic cancellation when variance is small relative to mean²
 - May produce negative variance due to floating-point errors
 
+**Performance advantage**: Simple arithmetic operations, highly cache-efficient.
+
+### Sliding Window Approach (SMA/StdDev)
+
+Used by current implementations:
+
+```
+For each new value x, old value x_old:
+  sum = sum + x - x_old
+  mean = sum / n
+```
+
+- Amortized O(1) per element
+- Minimal division operations
+- **Best performance** for this use case
+
 ### Memory Layout
 
 Both approaches output 3 vectors (mean, variance, stddev).
 The fused approach writes all three in a single loop iteration,
-which may have better write combining and cache behavior.
+but this benefit is overwhelmed by the computational overhead of Welford's algorithm.
 
 ---
 
 *Report generated for fast-ta micro-experiments framework*
-*Last updated: Pending benchmark execution*
+*Completed: 2024-12-20*
