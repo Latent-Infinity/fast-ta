@@ -1,0 +1,15 @@
+{
+  "discovered_files": {
+    "crates/fast-ta-experiments/src/data.rs": {
+      "description": "rand 0.8 uses gen() method instead of random() for generating random numbers from ChaCha8Rng. Also need f64 suffix on floating point literals to avoid ambiguous type errors with sqrt().",
+      "category": "dependency_api",
+      "discovered_at": "2025-12-21T06:20:22.021314+00:00"
+    },
+    "crates/fast-ta-core/src/error.rs": {
+      "description": "Error enum uses &'static str for context and reason fields. Cannot use String or format!() - must use static string literals.",
+      "category": "pattern",
+      "discovered_at": "2025-12-21T06:20:22.036530+00:00"
+    }
+  },
+  "last_updated": "2025-12-21T06:20:22.036540+00:00"
+}

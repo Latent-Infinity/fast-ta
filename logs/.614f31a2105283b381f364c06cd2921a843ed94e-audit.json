@@ -1,0 +1,15 @@
+{
+    "keep": {
+        "days": true,
+        "amount": 14
+    },
+    "auditLog": "/Users/firestrand/Projects/latenty-infinity/fast-ta/.worktrees/002-update-product-requirements-with-benchmark-results/logs/.614f31a2105283b381f364c06cd2921a843ed94e-audit.json",
+    "files": [
+        {
+            "date": 1766297598446,
+            "name": "/Users/firestrand/Projects/latenty-infinity/fast-ta/.worktrees/002-update-product-requirements-with-benchmark-results/logs/mcp-puppeteer-2025-12-20.log",
+            "hash": "52ba026a6dce13ecbba08658e5fbf26d040e9d323296ec9c7a75144f61b1108d"
+        }
+    ],
+    "hashType": "sha256"
+}
