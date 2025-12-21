@@ -69,8 +69,9 @@
             "command": "cargo bench --package fast-ta-experiments --bench e01_baseline",
             "expected": "Benchmark completes, HTML report generated in target/criterion/e01_baseline/"
           },
-          "status": "pending",
-          "notes": "Expected runtime: 5-10 minutes. Measures SMA, EMA, RSI, MACD, ATR, Bollinger, Stochastic at 1K/10K/100K data points."
+          "status": "completed",
+          "notes": "E01 baseline benchmarks executed successfully. All 7 indicators (SMA, EMA, RSI, MACD, ATR, Bollinger, Stochastic) benchmarked at 1K, 10K, and 100K data points. O(n) complexity confirmed via scaling ratios (approximately 10\u00d7 per order of magnitude). HTML reports generated in target/criterion/e01_baseline_*/. Results recorded in build-progress.txt Session 6.",
+          "updated_at": "2025-12-21T06:29:51.301162+00:00"
         },
         {
           "id": "subtask-2-2",
@@ -581,5 +582,5 @@
     }
   },
   "qa_signoff": null,
-  "last_updated": "2025-12-21T06:23:13.818152+00:00"
+  "last_updated": "2025-12-21T06:29:51.301173+00:00"
 }

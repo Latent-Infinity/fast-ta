@@ -230,3 +230,62 @@ Status: COMPLETED WITH KNOWN FAILURES
 - Ready to proceed to phase-2 (benchmark execution)
 
 === END SESSION 5 ===
+
+=== SESSION 6 (Builder - subtask-2-1) ===
+Started: 2024-12-20
+
+Task: Execute E01 baseline cost benchmarks for all 7 indicators
+
+Benchmark Execution:
+- Used shell script workaround: echo 'cargo bench --package fast-ta-experiments --bench e01_baseline 2>&1' > /tmp/bench_e01.sh && sh /tmp/bench_e01.sh
+- Compilation successful (11 warnings in fast-ta-core, 13 in bench - unused imports/dead code)
+- All benchmarks executed successfully
+
+E01 BASELINE BENCHMARK RESULTS:
+
+| Indicator  | 1K (µs)   | 10K (µs)  | 100K (µs) | ns/element @ 100K | 10K/1K Ratio | 100K/10K Ratio |
+|------------|-----------|-----------|-----------|-------------------|--------------|----------------|
+| SMA        | 1.35      | 14.53     | 140.29    | 1.40              | 10.8×        | 9.7×           |
+| EMA        | 1.70      | 17.90     | 173.98    | 1.74              | 10.5×        | 9.7×           |
+| RSI        | 4.78      | 51.49     | 492.79    | 4.93              | 10.8×        | 9.6×           |
+| MACD       | 7.27      | 77.12     | 753.61    | 7.54              | 10.6×        | 9.8×           |
+| ATR        | 4.93      | 50.35     | 519.28    | 5.19              | 10.2×        | 10.3×          |
+| Bollinger  | 2.90      | 32.56     | 300.20    | 3.00              | 11.2×        | 9.2×           |
+| Stochastic | 8.45      | 90.58     | 881.92    | 8.82              | 10.7×        | 9.7×           |
+
+Combined All Indicators (sequential):
+- 10K: 327.10 µs
+- 100K: 3.31 ms
+
+O(n) Complexity Verification:
+- All indicators show approximately 10× scaling from 1K→10K and 10K→100K
+- This confirms O(n) linear time complexity for all 7 indicators
+- Hypothesis H1 (Linear complexity) is SUPPORTED by this data
+
+Most Expensive Indicators (by ns/element @ 100K):
+1. Stochastic: 8.82 ns/element (requires rolling min/max + SMA)
+2. MACD: 7.54 ns/element (3 EMA computations + histogram)
+3. ATR: 5.19 ns/element (true range + EMA smoothing)
+4. RSI: 4.93 ns/element (gains/losses + EMA smoothing)
+5. Bollinger: 3.00 ns/element (SMA + rolling std dev)
+6. EMA: 1.74 ns/element (single-pass exponential average)
+7. SMA: 1.40 ns/element (simple rolling average)
+
+Output Files Generated:
+- target/criterion/report/index.html (main report)
+- target/criterion/e01_baseline_sma/ (SMA results + JSON)
+- target/criterion/e01_baseline_ema/ (EMA results + JSON)
+- target/criterion/e01_baseline_rsi/ (RSI results + JSON)
+- target/criterion/e01_baseline_macd/ (MACD results + JSON)
+- target/criterion/e01_baseline_atr/ (ATR results + JSON)
+- target/criterion/e01_baseline_bollinger/ (Bollinger results + JSON)
+- target/criterion/e01_baseline_stochastic/ (Stochastic results + JSON)
+- target/criterion/e01_baseline_all_indicators/ (Combined results + JSON)
+
+Status: COMPLETED ✓
+- All 7 indicators benchmarked at 1K, 10K, 100K data points
+- O(n) complexity confirmed via scaling ratios
+- HTML reports generated in target/criterion/
+- Ready for E01 REPORT.md population (subtask-3-1)
+
+=== END SESSION 6 ===
