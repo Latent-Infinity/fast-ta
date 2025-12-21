@@ -50,6 +50,12 @@
 #![warn(missing_docs)]
 #![warn(clippy::all)]
 #![warn(clippy::pedantic)]
+#![warn(clippy::perf)]
+#![warn(clippy::nursery)]
+#![warn(clippy::needless_collect)]
+#![warn(clippy::or_fun_call)]
+#![warn(clippy::inefficient_to_string)]
+#![warn(clippy::useless_conversion)]
 #![allow(clippy::module_name_repetitions)]
 
 pub mod error;

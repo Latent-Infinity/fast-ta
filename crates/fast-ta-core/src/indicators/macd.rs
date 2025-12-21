@@ -151,6 +151,7 @@ impl<T: SeriesElement> MacdOutput<T> {
 /// // - Positive histogram: bullish momentum
 /// // - Negative histogram: bearish momentum
 /// ```
+#[must_use = "this returns a Result with the MACD output, which should be used"]
 pub fn macd<T: SeriesElement>(
     data: &[T],
     fast_period: usize,
@@ -230,6 +231,7 @@ pub fn macd<T: SeriesElement>(
 ///     &mut macd_line, &mut signal_line, &mut histogram
 /// ).unwrap();
 /// ```
+#[must_use = "this returns a Result with the valid MACD counts"]
 pub fn macd_into<T: SeriesElement>(
     data: &[T],
     fast_period: usize,

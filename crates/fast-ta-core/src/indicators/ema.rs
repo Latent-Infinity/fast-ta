@@ -88,6 +88,7 @@ use crate::traits::{SeriesElement, ValidatedInput};
 /// assert!(result[1].is_nan());
 /// // EMA starts from index 2 with SMA seed, then uses exponential smoothing
 /// ```
+#[must_use = "this returns a Result with the EMA values, which should be used"]
 pub fn ema<T: SeriesElement>(data: &[T], period: usize) -> Result<Vec<T>> {
     let alpha = compute_standard_alpha::<T>(period)?;
     ema_with_alpha(data, period, alpha)
@@ -121,6 +122,7 @@ pub fn ema<T: SeriesElement>(data: &[T], period: usize) -> Result<Vec<T>> {
 /// assert_eq!(valid_count, 3);
 /// assert!(output[0].is_nan());
 /// ```
+#[must_use = "this returns a Result with the count of valid EMA values"]
 pub fn ema_into<T: SeriesElement>(data: &[T], period: usize, output: &mut [T]) -> Result<usize> {
     let alpha = compute_standard_alpha::<T>(period)?;
     ema_with_alpha_into(data, period, alpha, output)
@@ -152,6 +154,7 @@ pub fn ema_into<T: SeriesElement>(data: &[T], period: usize, output: &mut [T]) -
 ///
 /// // Wilder's smoothing is slower than standard EMA
 /// ```
+#[must_use = "this returns a Result with the EMA values using Wilder's smoothing"]
 pub fn ema_wilder<T: SeriesElement>(data: &[T], period: usize) -> Result<Vec<T>> {
     let alpha = compute_wilder_alpha::<T>(period)?;
     ema_with_alpha(data, period, alpha)
@@ -168,6 +171,7 @@ pub fn ema_wilder<T: SeriesElement>(data: &[T], period: usize) -> Result<Vec<T>>
 /// # Returns
 ///
 /// A `Result` containing the number of valid EMA values computed.
+#[must_use = "this returns a Result with the count of valid Wilder EMA values"]
 pub fn ema_wilder_into<T: SeriesElement>(
     data: &[T],
     period: usize,
@@ -201,6 +205,7 @@ pub fn ema_wilder_into<T: SeriesElement>(
 /// let alpha = 0.5; // Custom 50% weighting
 /// let result = ema_with_alpha(&data, 3, alpha).unwrap();
 /// ```
+#[must_use = "this returns a Result with the EMA values, which should be used"]
 pub fn ema_with_alpha<T: SeriesElement>(data: &[T], period: usize, alpha: T) -> Result<Vec<T>> {
     // Validate inputs
     validate_ema_inputs(data, period)?;
@@ -226,6 +231,7 @@ pub fn ema_with_alpha<T: SeriesElement>(data: &[T], period: usize, alpha: T) -> 
 /// # Returns
 ///
 /// A `Result` containing the number of valid EMA values computed.
+#[must_use = "this returns a Result with the count of valid EMA values"]
 pub fn ema_with_alpha_into<T: SeriesElement>(
     data: &[T],
     period: usize,
@@ -343,6 +349,7 @@ fn compute_ema_core<T: SeriesElement>(data: &[T], period: usize, alpha: T, outpu
 /// // Wilder 14 is equivalent to standard EMA 27
 /// assert_eq!(wilder_to_standard_period(14), 27);
 /// ```
+#[must_use = "this returns the equivalent standard EMA period"]
 pub fn wilder_to_standard_period(wilder_period: usize) -> usize {
     2 * wilder_period - 1
 }
@@ -359,6 +366,7 @@ pub fn wilder_to_standard_period(wilder_period: usize) -> usize {
 /// // Standard EMA 27 is equivalent to Wilder 14
 /// assert_eq!(standard_to_wilder_period(27), 14);
 /// ```
+#[must_use = "this returns the equivalent Wilder period"]
 pub fn standard_to_wilder_period(standard_period: usize) -> usize {
     (standard_period + 1) / 2
 }

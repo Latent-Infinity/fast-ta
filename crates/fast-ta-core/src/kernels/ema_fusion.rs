@@ -86,32 +86,37 @@ pub struct EmaFusionOutput<T> {
 
 impl<T: SeriesElement> EmaFusionOutput<T> {
     /// Returns the length of the output vectors.
+    #[inline]
     #[must_use]
     pub fn len(&self) -> usize {
         self.ema.len()
     }
 
     /// Returns true if the output vectors are empty.
+    #[inline]
     #[must_use]
     pub fn is_empty(&self) -> bool {
         self.ema.is_empty()
     }
 
     /// Returns the index of the first valid EMA value.
+    #[inline]
     #[must_use]
-    pub fn first_valid_ema_index(period: usize) -> usize {
+    pub const fn first_valid_ema_index(period: usize) -> usize {
         period.saturating_sub(1)
     }
 
     /// Returns the index of the first valid DEMA value.
+    #[inline]
     #[must_use]
-    pub fn first_valid_dema_index(period: usize) -> usize {
+    pub const fn first_valid_dema_index(period: usize) -> usize {
         (2 * period).saturating_sub(2)
     }
 
     /// Returns the index of the first valid TEMA value.
+    #[inline]
     #[must_use]
-    pub fn first_valid_tema_index(period: usize) -> usize {
+    pub const fn first_valid_tema_index(period: usize) -> usize {
         (3 * period).saturating_sub(3)
     }
 }
@@ -133,12 +138,14 @@ pub struct MacdFusionOutput<T> {
 
 impl<T: SeriesElement> MacdFusionOutput<T> {
     /// Returns the length of the output vectors.
+    #[inline]
     #[must_use]
     pub fn len(&self) -> usize {
         self.macd_line.len()
     }
 
     /// Returns true if the output vectors are empty.
+    #[inline]
     #[must_use]
     pub fn is_empty(&self) -> bool {
         self.macd_line.is_empty()

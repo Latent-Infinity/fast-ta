@@ -30,15 +30,24 @@ pub mod ema_fusion;
 pub mod rolling_extrema;
 pub mod running_stat;
 
-// Re-export kernel types for convenient access
+// Re-export kernel types for convenient access.
+//
+// These re-exports allow users to import directly from `kernels` without
+// needing to specify the submodule, e.g., `use fast_ta_core::kernels::ema_fusion;`
+
+// EMA fusion kernel exports: fused EMA/DEMA/TEMA and MACD computation
 pub use ema_fusion::{
     ema_fusion, ema_fusion_into, ema_multi, ema_multi_into, macd_fusion, macd_fusion_into,
     EmaFusionOutput, MacdFusionOutput,
 };
+
+// Rolling extrema kernel exports: O(n) rolling max/min using monotonic deque
 pub use rolling_extrema::{
     rolling_extrema, rolling_extrema_into, rolling_max, rolling_max_into, rolling_max_naive,
     rolling_min, rolling_min_into, rolling_min_naive, MonotonicDeque, RollingExtremaOutput,
 };
+
+// Running statistics kernel exports: Welford's algorithm for mean/variance/stddev
 pub use running_stat::{
     rolling_stats, rolling_stats_into, RollingStat, RollingStatOutput, RunningStat,
 };

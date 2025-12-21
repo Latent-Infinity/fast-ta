@@ -111,6 +111,7 @@ pub struct BollingerOutput<T> {
 /// assert!(!result.upper[19].is_nan());
 /// assert!(!result.lower[19].is_nan());
 /// ```
+#[must_use = "this returns a Result with Bollinger Bands values, which should be used"]
 pub fn bollinger<T: SeriesElement>(
     data: &[T],
     period: usize,
@@ -226,6 +227,7 @@ pub fn bollinger<T: SeriesElement>(
 ///
 /// assert_eq!(valid_count, 3);
 /// ```
+#[must_use = "this returns a Result with the valid count, which should be used"]
 pub fn bollinger_into<T: SeriesElement>(
     data: &[T],
     period: usize,
@@ -351,6 +353,7 @@ pub fn bollinger_into<T: SeriesElement>(
 /// // Standard deviation of [1,2,3] = sqrt(2/3) ≈ 0.8165
 /// assert!((result[2] - 0.816496580927726).abs() < 1e-10);
 /// ```
+#[must_use = "this returns a Result with the rolling standard deviation values, which should be used"]
 pub fn rolling_stddev<T: SeriesElement>(data: &[T], period: usize) -> Result<Vec<T>> {
     // Validate inputs
     if period == 0 {
@@ -418,6 +421,7 @@ pub fn rolling_stddev<T: SeriesElement>(data: &[T], period: usize) -> Result<Vec
 ///
 /// A `Result` containing the number of valid values computed (data.len() - period + 1),
 /// or an error if validation fails.
+#[must_use = "this returns a Result with the valid count, which should be used"]
 pub fn rolling_stddev_into<T: SeriesElement>(
     data: &[T],
     period: usize,

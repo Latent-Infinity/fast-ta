@@ -97,18 +97,21 @@ impl<T: SeriesElement> MonotonicDeque<T> {
     }
 
     /// Returns true if the deque is empty.
+    #[inline]
     #[must_use]
     pub fn is_empty(&self) -> bool {
         self.deque.is_empty()
     }
 
     /// Returns the number of indices currently in the deque.
+    #[inline]
     #[must_use]
     pub fn len(&self) -> usize {
         self.deque.len()
     }
 
     /// Clears the deque.
+    #[inline]
     pub fn clear(&mut self) {
         self.deque.clear();
     }
@@ -122,6 +125,7 @@ impl<T: SeriesElement> MonotonicDeque<T> {
     ///
     /// * `index` - The current index in the data array
     /// * `data` - The data array
+    #[inline]
     pub fn push_max(&mut self, index: usize, data: &[T]) {
         let value = data[index];
 
@@ -157,6 +161,7 @@ impl<T: SeriesElement> MonotonicDeque<T> {
     ///
     /// * `index` - The current index in the data array
     /// * `data` - The data array
+    #[inline]
     pub fn push_min(&mut self, index: usize, data: &[T]) {
         let value = data[index];
 
@@ -184,6 +189,7 @@ impl<T: SeriesElement> MonotonicDeque<T> {
     }
 
     /// Removes indices that are outside the current window.
+    #[inline]
     fn remove_expired(&mut self, current_index: usize) {
         // Only remove if we've seen at least `period` elements
         if current_index >= self.period {
@@ -202,6 +208,7 @@ impl<T: SeriesElement> MonotonicDeque<T> {
     /// Returns the index of the current extremum (max or min) value.
     ///
     /// Returns `None` if the deque is empty.
+    #[inline]
     #[must_use]
     pub fn front_index(&self) -> Option<usize> {
         self.deque.front().copied()
@@ -210,6 +217,7 @@ impl<T: SeriesElement> MonotonicDeque<T> {
     /// Returns the current extremum value from the data array.
     ///
     /// Returns `NaN` if the deque is empty.
+    #[inline]
     pub fn get_extremum(&self, data: &[T]) -> T {
         match self.front_index() {
             Some(idx) => data[idx],

@@ -115,6 +115,7 @@ use crate::traits::{SeriesElement, ValidatedInput};
 /// assert!(!result[3].is_nan());
 /// assert!(result[3] >= 0.0 && result[3] <= 100.0);
 /// ```
+#[must_use = "this returns a Result with the RSI values, which should be used"]
 pub fn rsi<T: SeriesElement>(data: &[T], period: usize) -> Result<Vec<T>> {
     // Validate inputs
     validate_rsi_inputs(data, period)?;
@@ -165,6 +166,7 @@ pub fn rsi<T: SeriesElement>(data: &[T], period: usize) -> Result<Vec<T>> {
 /// assert!(output[0].is_nan());
 /// assert!(!output[3].is_nan());
 /// ```
+#[must_use = "this returns a Result with the count of valid RSI values"]
 pub fn rsi_into<T: SeriesElement>(data: &[T], period: usize, output: &mut [T]) -> Result<usize> {
     // Validate inputs
     validate_rsi_inputs(data, period)?;

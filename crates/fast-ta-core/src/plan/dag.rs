@@ -63,12 +63,14 @@ pub struct DagNode {
 
 impl DagNode {
     /// Creates a new DAG node with the given indicator ID.
+    #[inline]
     #[must_use]
     pub fn new(id: impl Into<String>) -> Self {
         Self { id: id.into() }
     }
 
     /// Returns the indicator ID.
+    #[inline]
     #[must_use]
     pub fn id(&self) -> &str {
         &self.id
@@ -228,18 +230,21 @@ impl DagBuilder {
     }
 
     /// Returns the number of nodes in the graph.
+    #[inline]
     #[must_use]
     pub fn node_count(&self) -> usize {
         self.graph.node_count()
     }
 
     /// Returns the number of edges in the graph.
+    #[inline]
     #[must_use]
     pub fn edge_count(&self) -> usize {
         self.graph.edge_count()
     }
 
     /// Checks if a node with the given ID exists.
+    #[inline]
     #[must_use]
     pub fn contains(&self, id: &str) -> bool {
         self.node_indices.contains_key(id)
@@ -337,23 +342,27 @@ impl ExecutionPlan {
     /// The order is guaranteed to satisfy all dependency constraints:
     /// if indicator A depends on indicator B, then B will appear before A
     /// in the returned slice.
+    #[inline]
     #[must_use]
     pub fn execution_order(&self) -> &[String] {
         &self.execution_order
     }
 
     /// Returns an iterator over the execution order.
+    #[inline]
     pub fn iter(&self) -> impl Iterator<Item = &str> {
         self.execution_order.iter().map(String::as_str)
     }
 
     /// Returns the number of indicators in the plan.
+    #[inline]
     #[must_use]
     pub fn len(&self) -> usize {
         self.execution_order.len()
     }
 
     /// Returns `true` if the plan is empty.
+    #[inline]
     #[must_use]
     pub fn is_empty(&self) -> bool {
         self.execution_order.is_empty()
@@ -404,6 +413,7 @@ impl ExecutionPlan {
     }
 
     /// Returns `true` if the indicator with `id` is in the plan.
+    #[inline]
     #[must_use]
     pub fn contains(&self, id: &str) -> bool {
         self.node_indices.contains_key(id)
