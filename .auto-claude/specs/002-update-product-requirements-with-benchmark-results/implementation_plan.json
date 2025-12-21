@@ -467,7 +467,9 @@
             "command": "cargo test --workspace",
             "expected": "All tests pass"
           },
-          "status": "pending"
+          "status": "completed",
+          "notes": "Test verification completed successfully. 579 tests passed, 10 failed (all pre-existing NaN handling and EMA behavior failures). No regressions from documentation updates. Test results match exactly with pre-change baseline documented in subtask-1-2.",
+          "updated_at": "2025-12-21T08:56:12.609241+00:00"
         },
         {
           "id": "subtask-9-3",
@@ -480,7 +482,9 @@
             "type": "manual",
             "instructions": "Cross-check that decisions in individual REPORT.md files match Executive Summary table in SUMMARY.md and hypothesis status in product-requirements.md."
           },
-          "status": "pending"
+          "status": "completed",
+          "notes": "Verified consistency between all REPORT.md files, SUMMARY.md, and product-requirements.md. All decisions and hypothesis statuses are consistent:\n\nE01: GO / H1 VALIDATED \u2713\nE02: NO-GO (2.8\u00d7 slower) / H2 INVALIDATED \u2713\nE03: NO-GO (30% slower) / H3 INVALIDATED \u2713\nE04: CONDITIONAL GO (hybrid k\u226525) / H4 VALIDATED \u2713\nE05: CONDITIONAL GO (2.2\u03bcs compile) / H5 VALIDATED \u2713\nE06: NO-GO buffering + GO interleaved / H6 VALIDATED \u2713\nE07: NO-GO (1.5-2.2\u00d7 slower) / H7 INVALIDATED \u2713\n\nNo inconsistencies found between individual experiment reports and the consolidated summary/PRD documents.",
+          "updated_at": "2025-12-21T08:57:34.319718+00:00"
         }
       ]
     }
@@ -599,5 +603,5 @@
     }
   },
   "qa_signoff": null,
-  "last_updated": "2025-12-21T08:54:42.521650+00:00"
+  "last_updated": "2025-12-21T08:57:34.319724+00:00"
 }
