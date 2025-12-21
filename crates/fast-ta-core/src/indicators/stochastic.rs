@@ -113,6 +113,7 @@ pub struct StochasticOutput<T> {
 /// let result = stochastic_fast(&high, &low, &close, 5, 3).unwrap();
 /// assert!(!result.k[4].is_nan()); // First valid %K
 /// ```
+#[must_use = "this returns a Result with Stochastic values, which should be used"]
 pub fn stochastic_fast<T: SeriesElement>(
     high: &[T],
     low: &[T],
@@ -153,6 +154,7 @@ pub fn stochastic_fast<T: SeriesElement>(
 ///
 /// A `Result` containing a tuple of (valid %K count, valid %D count),
 /// or an error if validation fails.
+#[must_use = "this returns a Result with valid counts, which should be used"]
 pub fn stochastic_fast_into<T: SeriesElement>(
     high: &[T],
     low: &[T],
@@ -234,6 +236,7 @@ pub fn stochastic_fast_into<T: SeriesElement>(
 /// assert!(result.k[5].is_nan());
 /// assert!(!result.k[6].is_nan());
 /// ```
+#[must_use = "this returns a Result with Stochastic values, which should be used"]
 pub fn stochastic_slow<T: SeriesElement>(
     high: &[T],
     low: &[T],
@@ -246,6 +249,7 @@ pub fn stochastic_slow<T: SeriesElement>(
 }
 
 /// Computes the Slow Stochastic Oscillator into pre-allocated output buffers.
+#[must_use = "this returns a Result with valid counts, which should be used"]
 pub fn stochastic_slow_into<T: SeriesElement>(
     high: &[T],
     low: &[T],
@@ -298,6 +302,7 @@ pub fn stochastic_slow_into<T: SeriesElement>(
 /// assert!(result.k[5].is_nan());
 /// assert!(!result.k[6].is_nan());
 /// ```
+#[must_use = "this returns a Result with Stochastic values, which should be used"]
 pub fn stochastic_full<T: SeriesElement>(
     high: &[T],
     low: &[T],
@@ -327,6 +332,7 @@ pub fn stochastic_full<T: SeriesElement>(
 }
 
 /// Computes the Full Stochastic Oscillator into pre-allocated output buffers.
+#[must_use = "this returns a Result with valid counts, which should be used"]
 pub fn stochastic_full_into<T: SeriesElement>(
     high: &[T],
     low: &[T],
