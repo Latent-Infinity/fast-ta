@@ -147,5 +147,10 @@ cython_debug/
 # Windows
 Thumbs.db
 
-# Auto Claude data directory
-.auto-claude/
+# Rust
+target/
+Cargo.lock
+*.rs.bk
+
+# Criterion benchmark outputs
+target/criterion/
