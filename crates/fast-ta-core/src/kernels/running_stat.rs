@@ -137,6 +137,7 @@ impl<T: SeriesElement> RunningStat<T> {
     /// stat.update(3.0);
     /// assert!((stat.mean() - 2.0).abs() < 1e-10);
     /// ```
+    #[inline]
     pub fn update(&mut self, value: T) {
         // Handle NaN values - they propagate through
         if value.is_nan() {
@@ -176,6 +177,7 @@ impl<T: SeriesElement> RunningStat<T> {
     ///
     /// This method may produce incorrect results if called when count is 0
     /// or if the value was never added.
+    #[inline]
     pub fn remove(&mut self, value: T) {
         // Handle edge cases
         if self.count == 0 || value.is_nan() || self.mean.is_nan() {
