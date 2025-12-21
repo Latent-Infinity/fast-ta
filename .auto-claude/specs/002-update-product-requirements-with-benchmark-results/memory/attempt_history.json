@@ -217,11 +217,35 @@
         }
       ],
       "status": "completed"
+    },
+    "subtask-8-1": {
+      "attempts": [
+        {
+          "session": 20,
+          "timestamp": "2025-12-21T00:53:34.585782",
+          "approach": "Implemented: Update docs/product-requirements.md Section 1.3 hypothesis table with VALIDATED or INVALIDATED statu",
+          "success": true,
+          "error": null
+        }
+      ],
+      "status": "completed"
+    },
+    "subtask-9-1": {
+      "attempts": [
+        {
+          "session": 21,
+          "timestamp": "2025-12-21T00:54:52.304597",
+          "approach": "Implemented: Verify no TBD values remain in any experiment reports or documentation",
+          "success": true,
+          "error": null
+        }
+      ],
+      "status": "completed"
     }
   },
   "stuck_subtasks": [],
   "metadata": {
     "created_at": "2025-12-20T22:13:16.761442",
-    "last_updated": "2025-12-21T00:51:21.077394"
+    "last_updated": "2025-12-21T00:54:52.304601"
   }
 }
