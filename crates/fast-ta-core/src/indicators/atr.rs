@@ -114,6 +114,7 @@ use crate::traits::{SeriesElement, ValidatedInput};
 /// assert!(tr[0].is_nan());  // No previous close
 /// assert!(!tr[1].is_nan()); // Valid TR
 /// ```
+#[must_use = "this returns a Result with the True Range values, which should be used"]
 pub fn true_range<T: SeriesElement>(high: &[T], low: &[T], close: &[T]) -> Result<Vec<T>> {
     // Validate inputs
     validate_ohlc_inputs(high, low, close)?;
@@ -156,6 +157,7 @@ pub fn true_range<T: SeriesElement>(high: &[T], low: &[T], close: &[T]) -> Resul
 /// let valid_count = true_range_into(&high, &low, &close, &mut output).unwrap();
 /// assert_eq!(valid_count, 4); // n - 1 valid values
 /// ```
+#[must_use = "this returns a Result with the count of valid True Range values"]
 pub fn true_range_into<T: SeriesElement>(
     high: &[T],
     low: &[T],
@@ -242,6 +244,7 @@ pub fn true_range_into<T: SeriesElement>(
 /// assert!(!result[5].is_nan());
 /// assert!(result[5] > 0.0); // ATR is always positive
 /// ```
+#[must_use = "this returns a Result with the ATR values, which should be used"]
 pub fn atr<T: SeriesElement>(
     high: &[T],
     low: &[T],
@@ -293,6 +296,7 @@ pub fn atr<T: SeriesElement>(
 /// let valid_count = atr_into(&high, &low, &close, 5, &mut output).unwrap();
 /// assert_eq!(valid_count, 6); // 11 - 5 = 6 valid values
 /// ```
+#[must_use = "this returns a Result with the count of valid ATR values"]
 pub fn atr_into<T: SeriesElement>(
     high: &[T],
     low: &[T],
