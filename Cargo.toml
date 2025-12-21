@@ -25,3 +25,10 @@ criterion = "0.5.1"
 # Serialization (for benchmark output)
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
+
+[profile.release]
+opt-level = 3              # Maximum optimizations
+lto = "fat"                # Full cross-crate LTO
+codegen-units = 1          # Single codegen unit for maximum optimization
+panic = "abort"            # Abort on panic (no unwinding overhead)
+strip = true               # Strip symbols from binary
