@@ -154,3 +154,6 @@ Cargo.lock
 
 # Criterion benchmark outputs
 target/criterion/
+
+# auto claude
+.auto-claude/
