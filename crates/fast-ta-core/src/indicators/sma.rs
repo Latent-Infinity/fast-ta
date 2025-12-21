@@ -86,6 +86,7 @@ use crate::traits::{SeriesElement, ValidatedInput};
 /// assert!(result[1].is_nan());
 /// assert!((result[2] - 11.0).abs() < 1e-10);
 /// ```
+#[must_use = "this returns a Result with the SMA values, which should be used"]
 pub fn sma<T: SeriesElement>(data: &[T], period: usize) -> Result<Vec<T>> {
     // Validate inputs
     if period == 0 {
@@ -165,6 +166,7 @@ pub fn sma<T: SeriesElement>(data: &[T], period: usize) -> Result<Vec<T>> {
 /// assert!(output[0].is_nan());
 /// assert!((output[2] - 2.0).abs() < 1e-10);
 /// ```
+#[must_use = "this returns a Result with the count of valid SMA values"]
 pub fn sma_into<T: SeriesElement>(data: &[T], period: usize, output: &mut [T]) -> Result<usize> {
     // Validate inputs
     if period == 0 {
