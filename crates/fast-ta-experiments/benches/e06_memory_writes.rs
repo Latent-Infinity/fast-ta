@@ -249,7 +249,7 @@ fn bench_buffered_writes(c: &mut Criterion) {
                         output[start..].copy_from_slice(&buffer[..buf_idx]);
                     }
 
-                    black_box(&output)
+                    black_box(output[size - 1])
                 })
             },
         );
@@ -277,7 +277,7 @@ fn bench_buffered_writes(c: &mut Criterion) {
                     output[i] = sum / period_f;
                 }
 
-                black_box(&output)
+                black_box(output[size - 1])
             })
         },
     );
@@ -317,7 +317,7 @@ fn bench_multi_output_writes(c: &mut Criterion) {
                             let period = 10 + i * 5; // Periods: 10, 15, 20, 25, ...
                             let _ = sma_into(&data.prices, period, output);
                         }
-                        black_box(&outputs)
+                        black_box(outputs.last().map(|v| v.last().copied()).flatten())
                     })
                 },
             );
@@ -359,7 +359,7 @@ fn bench_interleaved_vs_sequential(c: &mut Criterion) {
                 // Complete indicator 4
                 let _ = sma_into(&data.prices, 25, &mut output4);
 
-                black_box((&output1, &output2, &output3, &output4))
+                black_box((output1[size - 1], output2[size - 1], output3[size - 1], output4[size - 1]))
             })
         },
     );
@@ -416,7 +416,7 @@ fn bench_interleaved_vs_sequential(c: &mut Criterion) {
                     output4[i] = sum4 / 25.0;
                 }
 
-                black_box((&output1, &output2, &output3, &output4))
+                black_box((output1[size - 1], output2[size - 1], output3[size - 1], output4[size - 1]))
             })
         },
     );
@@ -447,7 +447,7 @@ fn bench_chunked_processing(c: &mut Criterion) {
                 let mut output = vec![0.0_f64; size];
                 b.iter(|| {
                     chunked_sma(&data.prices, SMA_PERIOD, chunk, &mut output);
-                    black_box(&output)
+                    black_box(output[size - 1])
                 })
             },
         );
@@ -461,7 +461,7 @@ fn bench_chunked_processing(c: &mut Criterion) {
             let mut output = vec![0.0_f64; size];
             b.iter(|| {
                 let _ = sma_into(&data.prices, SMA_PERIOD, &mut output);
-                black_box(&output)
+                black_box(output[size - 1])
             })
         },
     );
@@ -526,7 +526,7 @@ fn bench_memory_access_patterns(c: &mut Criterion) {
                 for i in 0..size {
                     output[i] = data.prices[i] * 2.0;
                 }
-                black_box(&output)
+                black_box(output[size - 1])
             })
         },
     );
@@ -549,7 +549,7 @@ fn bench_memory_access_patterns(c: &mut Criterion) {
                         j += 1;
                     }
                 }
-                black_box(&output)
+                black_box(output[size - 1])
             })
         },
     );
@@ -575,7 +575,7 @@ fn bench_memory_access_patterns(c: &mut Criterion) {
                 for i in 0..size {
                     output3[i] = data.prices[i] * 4.0;
                 }
-                black_box((&output1, &output2, &output3))
+                black_box((output1[size - 1], output2[size - 1], output3[size - 1]))
             })
         },
     );
@@ -595,7 +595,7 @@ fn bench_memory_access_patterns(c: &mut Criterion) {
                     output2[i] = val * 3.0;
                     output3[i] = val * 4.0;
                 }
-                black_box((&output1, &output2, &output3))
+                black_box((output1[size - 1], output2[size - 1], output3[size - 1]))
             })
         },
     );
@@ -629,7 +629,7 @@ fn bench_write_throughput(c: &mut Criterion) {
                 let mut output = vec![0.0_f64; size];
                 b.iter(|| {
                     let _ = sma_into(&data.prices, SMA_PERIOD, &mut output);
-                    black_box(&output)
+                    black_box(output[size - 1])
                 })
             },
         );
@@ -647,7 +647,7 @@ fn bench_write_throughput(c: &mut Criterion) {
                 };
                 b.iter(|| {
                     let _ = bollinger_into(&data.prices, BOLLINGER_PERIOD, 2.0, &mut output);
-                    black_box(&output)
+                    black_box((output.middle[size - 1], output.upper[size - 1], output.lower[size - 1]))
                 })
             },
         );
@@ -691,7 +691,7 @@ fn bench_allocation_overhead(c: &mut Criterion) {
                 let mut output = vec![0.0_f64; size];
                 b.iter(|| {
                     let _ = sma_into(&data.prices, SMA_PERIOD, &mut output);
-                    black_box(&output)
+                    black_box(output[size - 1])
                 })
             },
         );
