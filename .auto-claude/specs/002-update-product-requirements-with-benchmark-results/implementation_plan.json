@@ -141,9 +141,9 @@
             "command": "cargo bench --package fast-ta-experiments --bench e05_plan_overhead",
             "expected": "Benchmark completes, HTML report generated in target/criterion/e05_plan_overhead/"
           },
-          "status": "in_progress",
-          "notes": "Starting execution of E05 plan compilation overhead benchmarks",
-          "updated_at": "2025-12-21T07:09:39.471105+00:00"
+          "status": "completed",
+          "notes": "E05 plan overhead benchmarks executed successfully. Key findings: Plan compilation ~2.2 \u00b5s for 9 indicators, overhead <1% of execution time, break-even is IMMEDIATE. GO decision for plan infrastructure - viable for all use cases.",
+          "updated_at": "2025-12-21T07:22:36.778368+00:00"
         },
         {
           "id": "subtask-2-6",
@@ -159,8 +159,9 @@
             "command": "cargo bench --package fast-ta-experiments --bench e06_memory_writes",
             "expected": "Benchmark completes, HTML report generated in target/criterion/e06_memory_writes/"
           },
-          "status": "pending",
-          "notes": "Compares write-every-bar vs buffered vs chunked processing. Target: \u226510% improvement."
+          "status": "completed",
+          "notes": "E06 memory write pattern benchmarks executed successfully. Fixed 14 compilation errors related to black_box returning references to captured variables. Benchmark results: preallocated buffers ~10-15% faster, interleaved writes 2.5x faster than sequential, direct writes outperform explicit buffering by ~20%, throughput ~900 Melem/s for single output.",
+          "updated_at": "2025-12-21T07:37:22.528580+00:00"
         },
         {
           "id": "subtask-2-7",
@@ -176,8 +177,9 @@
             "command": "cargo bench --package fast-ta-experiments --bench e07_end_to_end",
             "expected": "Benchmark completes, HTML report generated in target/criterion/e07_end_to_end/"
           },
-          "status": "pending",
-          "notes": "Final comprehensive comparison of direct vs plan mode for 7/14/21/28 indicators. Target: \u22651.5\u00d7 for \u226520 indicators."
+          "status": "completed",
+          "notes": "E07 end-to-end benchmarks executed successfully. Key findings: Direct mode is FASTER than plan mode across all sizes (1.5\u00d7 at 1K, 1.6\u00d7 at 10K, 2.2\u00d7 at 100K, 2.2\u00d7 at 1M). Plan mode shows NO advantage - it's consistently slower due to overhead. EMA fusion shows minor benefit (1.17\u00d7). GO/NO-GO decision: NO-GO for plan mode architecture as currently implemented - direct mode is faster. HTML reports generated in target/criterion/e07_end_to_end_*/ directories.",
+          "updated_at": "2025-12-21T07:52:57.565798+00:00"
         }
       ]
     },
@@ -586,5 +588,5 @@
     }
   },
   "qa_signoff": null,
-  "last_updated": "2025-12-21T07:09:39.471112+00:00"
+  "last_updated": "2025-12-21T07:52:57.565804+00:00"
 }
