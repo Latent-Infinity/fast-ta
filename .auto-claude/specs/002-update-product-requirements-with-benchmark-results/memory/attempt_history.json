@@ -85,11 +85,143 @@
         }
       ],
       "status": "completed"
+    },
+    "subtask-2-5": {
+      "attempts": [
+        {
+          "session": 9,
+          "timestamp": "2025-12-20T23:22:48.004682",
+          "approach": "Implemented: Execute E05 plan compilation overhead benchmarks",
+          "success": true,
+          "error": null
+        }
+      ],
+      "status": "completed"
+    },
+    "subtask-2-6": {
+      "attempts": [
+        {
+          "session": 10,
+          "timestamp": "2025-12-20T23:37:30.952236",
+          "approach": "Implemented: Execute E06 memory write pattern benchmarks",
+          "success": true,
+          "error": null
+        }
+      ],
+      "status": "completed"
+    },
+    "subtask-2-7": {
+      "attempts": [
+        {
+          "session": 11,
+          "timestamp": "2025-12-20T23:53:26.917951",
+          "approach": "Implemented: Execute E07 end-to-end comparison benchmarks (direct vs plan mode)",
+          "success": true,
+          "error": null
+        }
+      ],
+      "status": "completed"
+    },
+    "subtask-3-1": {
+      "attempts": [
+        {
+          "session": 12,
+          "timestamp": "2025-12-20T23:57:13.737157",
+          "approach": "Implemented: Extract E01 timing data from Criterion output and update REPORT.md with actual results",
+          "success": true,
+          "error": null
+        }
+      ],
+      "status": "completed"
+    },
+    "subtask-4-1": {
+      "attempts": [
+        {
+          "session": 13,
+          "timestamp": "2025-12-21T00:01:08.749072",
+          "approach": "Implemented: Extract E02 RunningStat fusion results and update REPORT.md with speedup percentages and go/no-go de",
+          "success": true,
+          "error": null
+        }
+      ],
+      "status": "completed"
+    },
+    "subtask-4-2": {
+      "attempts": [
+        {
+          "session": 14,
+          "timestamp": "2025-12-21T00:07:15.827204",
+          "approach": "Implemented: Extract E03 EMA fusion results and update REPORT.md with speedup percentages and go/no-go decision",
+          "success": true,
+          "error": null
+        }
+      ],
+      "status": "completed"
+    },
+    "subtask-4-3": {
+      "attempts": [
+        {
+          "session": 15,
+          "timestamp": "2025-12-21T00:13:05.984464",
+          "approach": "Implemented: Extract E04 rolling extrema results and update REPORT.md with speedup multiples and go/no-go decisio",
+          "success": true,
+          "error": null
+        }
+      ],
+      "status": "completed"
+    },
+    "subtask-5-1": {
+      "attempts": [
+        {
+          "session": 16,
+          "timestamp": "2025-12-21T00:20:33.672371",
+          "approach": "Implemented: Extract E05 plan overhead results and update REPORT.md with break-even analysis and go/no-go decisio",
+          "success": true,
+          "error": null
+        }
+      ],
+      "status": "completed"
+    },
+    "subtask-5-2": {
+      "attempts": [
+        {
+          "session": 17,
+          "timestamp": "2025-12-21T00:35:21.155375",
+          "approach": "Implemented: Extract E06 memory write pattern results and update REPORT.md with pattern recommendations",
+          "success": true,
+          "error": null
+        }
+      ],
+      "status": "completed"
+    },
+    "subtask-6-1": {
+      "attempts": [
+        {
+          "session": 18,
+          "timestamp": "2025-12-21T00:45:21.363007",
+          "approach": "Implemented: Extract E07 end-to-end results and update REPORT.md with direct vs plan comparison and final archite",
+          "success": true,
+          "error": null
+        }
+      ],
+      "status": "completed"
+    },
+    "subtask-7-1": {
+      "attempts": [
+        {
+          "session": 19,
+          "timestamp": "2025-12-21T00:51:21.077388",
+          "approach": "Implemented: Update docs/experiments/SUMMARY.md with consolidated results and all go/no-go decisions",
+          "success": true,
+          "error": null
+        }
+      ],
+      "status": "completed"
     }
   },
   "stuck_subtasks": [],
   "metadata": {
     "created_at": "2025-12-20T22:13:16.761442",
-    "last_updated": "2025-12-20T23:09:08.977549"
+    "last_updated": "2025-12-21T00:51:21.077394"
   }
 }

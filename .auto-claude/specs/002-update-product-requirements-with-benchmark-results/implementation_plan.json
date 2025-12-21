@@ -208,8 +208,9 @@
             "type": "manual",
             "instructions": "Verify all TBD values in E01 REPORT.md are replaced with actual timing data. Verify O(n) complexity by checking 10K\u2192100K ratios are approximately 10\u00d7."
           },
-          "status": "pending",
-          "notes": "Replace TBD values in: Individual Indicator Performance table, Combined Performance table, Throughput Analysis table, Complexity Verification table. Update Status from PENDING to COMPLETE."
+          "status": "completed",
+          "notes": "Successfully extracted E01 timing data from Criterion output and updated REPORT.md with actual benchmark results. All 7 indicators have timing data for 1K, 10K, and 100K data sizes. O(n) complexity verified with 10K\u2192100K ratios ranging from 8.9x to 10.6x. Status changed to COMPLETED, Decision: GO.",
+          "updated_at": "2025-12-21T07:56:57.799612+00:00"
         }
       ]
     },
@@ -238,8 +239,9 @@
             "type": "manual",
             "instructions": "Verify all TBD values replaced. Verify go/no-go decision recorded based on \u226520% speedup threshold."
           },
-          "status": "pending",
-          "notes": "Key tables: Primary Comparison (Fused vs Separate), Component Breakdown, Bollinger Comparison, Period Sensitivity. Decision: GO if \u226520%, INVESTIGATE if 10-20%, NO-GO if <10%."
+          "status": "completed",
+          "notes": "Populated E02 REPORT.md with benchmark results. Key findings: Fused Welford approach is 2.8\u00d7 SLOWER than separate passes (NO-GO decision). All TBD values replaced with actual measurements. Committed as 9f2b993.",
+          "updated_at": "2025-12-21T08:00:53.928664+00:00"
         },
         {
           "id": "subtask-4-2",
@@ -256,8 +258,9 @@
             "type": "manual",
             "instructions": "Verify all TBD values replaced. Verify go/no-go decision recorded based on \u226515% speedup for \u226510 EMAs threshold."
           },
-          "status": "pending",
-          "notes": "Key tables: 10 EMAs comparison, EMA Count Scaling. Decision: GO if \u226515% for 10 EMAs."
+          "status": "completed",
+          "notes": "Updated E03 EMA fusion REPORT.md with actual benchmark results. Key finding: NO-GO decision - EMA fusion is 30% SLOWER than separate passes for 10 EMAs at realistic data sizes. The theoretical memory bandwidth advantage is completely negated by loss of SIMD vectorization and register pressure. Commit: 19cfd92",
+          "updated_at": "2025-12-21T08:06:59.374742+00:00"
         },
         {
           "id": "subtask-4-3",
@@ -274,8 +277,9 @@
             "type": "manual",
             "instructions": "Verify all TBD values replaced. Verify go/no-go decision recorded based on \u22655\u00d7 speedup at k\u226550 threshold."
           },
-          "status": "pending",
-          "notes": "Key tables: Deque vs Naive comparison by period. Decision: GO if \u22655\u00d7 at k=50."
+          "status": "completed",
+          "notes": "Extracted E04 rolling extrema benchmark results and updated REPORT.md. Key findings: Deque-based algorithm shows CONDITIONAL GO - faster for periods >= 50 (4.3-134x speedup) but slower for small periods (naive 1.4-5x faster for period <= 14). Recommended hybrid algorithm with crossover at period ~25. Decision recorded: Use naive for period < 25, deque for period >= 25.",
+          "updated_at": "2025-12-21T08:12:48.701975+00:00"
         }
       ]
     },
@@ -304,8 +308,9 @@
             "type": "manual",
             "instructions": "Verify all TBD values replaced. Verify break-even point calculated. Decision recorded based on <100 executions threshold."
           },
-          "status": "pending",
-          "notes": "Key metrics: Registration time, DAG construction time, full compilation time, break-even executions."
+          "status": "completed",
+          "notes": "E05 REPORT.md updated with comprehensive benchmark results. Key findings: Plan compilation 2.2\u03bcs (500\u00d7 better than 1ms target), plan reuse 0.42ns, break-even 1 execution with any fusion. Decision: CONDITIONAL GO - plan mode viable but fusion needed for benefit. All TBD values replaced.",
+          "updated_at": "2025-12-21T08:20:09.140973+00:00"
         },
         {
           "id": "subtask-5-2",
@@ -322,8 +327,9 @@
             "type": "manual",
             "instructions": "Verify all TBD values replaced. Verify go/no-go decision recorded based on \u226510% improvement threshold."
           },
-          "status": "pending",
-          "notes": "Key tables: Write pattern comparison (allocating, pre-allocated, buffered), multi-output patterns."
+          "status": "completed",
+          "notes": "E06 Memory Write Pattern benchmarks executed and results populated. Key findings: NO-GO for buffered/chunked writes (19-27% slower), CONDITIONAL GO for interleaved multi-output (2.53\u00d7 faster). Pre-allocation saves 17-28%. Perfect linear scaling to 8 outputs. Recommendation: Use write-every-bar with pre-allocation and interleaved multi-output writes.",
+          "updated_at": "2025-12-21T08:34:54.230432+00:00"
         }
       ]
     },
@@ -352,8 +358,9 @@
             "type": "manual",
             "instructions": "Verify all TBD values replaced. Verify direct vs plan speedups recorded for 7/14/21/28 indicators. Final GO/NO-GO/CONDITIONAL decision documented."
           },
-          "status": "pending",
-          "notes": "Key tables: Baseline 7 Indicators, Direct vs Plan Comparison, Workload Scaling. Decision: GO if \u22651.5\u00d7 for \u226520 indicators, CONDITIONAL if \u22651.2\u00d7 for baseline 7."
+          "status": "completed",
+          "notes": "Extracted E07 end-to-end benchmark results from criterion JSON files and populated REPORT.md. Key findings: Plan mode is 1.4-2.2\u00d7 SLOWER than direct mode across all configurations. Workload scaling (7/14/21/28 indicators at 10K data) shows consistent slowdown. Final decision: NO-GO for plan-based architecture. Documented root causes and recommendation to use direct mode.",
+          "updated_at": "2025-12-21T08:45:12.108379+00:00"
         }
       ]
     },
@@ -385,8 +392,9 @@
             "type": "manual",
             "instructions": "Verify Executive Summary table updated with actual status and decisions for all 7 experiments. Verify all PENDING changed to actual outcomes."
           },
-          "status": "pending",
-          "notes": "Update Executive Summary table. Change status from PENDING to actual outcomes. Update Overall Recommendation section."
+          "status": "completed",
+          "notes": "Updated docs/experiments/SUMMARY.md with consolidated results from all 7 experiments:\n\nE01 Baseline: GO - O(n) complexity verified for all indicators\nE02 RunningStat: NO-GO - 2.8\u00d7 slower due to Welford's divisions\nE03 EMA Fusion: NO-GO - 30-116% slower at scale, prevents SIMD\nE04 Rolling Extrema: CONDITIONAL GO - Hybrid approach (naive k<25, deque k\u226525)\nE05 Plan Overhead: CONDITIONAL GO - 2.1\u03bcs compilation, but fusion fails\nE06 Memory Writes: NO-GO - Buffering 19-27% slower, interleaved 2.53\u00d7 faster for multi-output\nE07 End-to-End: NO-GO - Plan mode 1.4-2.2\u00d7 slower than direct mode\n\nOverall recommendation: Use Direct Mode. Plan-based architecture abandoned.",
+          "updated_at": "2025-12-21T08:51:11.287219+00:00"
         }
       ]
     },
@@ -588,5 +596,5 @@
     }
   },
   "qa_signoff": null,
-  "last_updated": "2025-12-21T07:52:57.565804+00:00"
+  "last_updated": "2025-12-21T08:51:11.287227+00:00"
 }
