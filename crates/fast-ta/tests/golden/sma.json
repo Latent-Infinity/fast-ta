@@ -1,0 +1,30 @@
+{
+  "indicator": "SMA",
+  "description": "TA-Lib SMA reference values",
+  "parameters": {"period": 3},
+  "talib_version": "0.4.32",
+  "generated_at": "2025-01-01T00:00:00Z",
+  "test_cases": [
+    {
+      "name": "simple_ascending",
+      "input": [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0],
+      "params": {"period": 3},
+      "expected": [null, null, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0],
+      "notes": "SMA(3) of 1-10 sequence"
+    },
+    {
+      "name": "constant_values",
+      "input": [50.0, 50.0, 50.0, 50.0, 50.0],
+      "params": {"period": 3},
+      "expected": [null, null, 50.0, 50.0, 50.0],
+      "notes": "Constant input yields constant SMA"
+    },
+    {
+      "name": "period_5",
+      "input": [10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0],
+      "params": {"period": 5},
+      "expected": [null, null, null, null, 30.0, 40.0, 50.0],
+      "notes": "SMA(5) of 10-70 sequence"
+    }
+  ]
+}

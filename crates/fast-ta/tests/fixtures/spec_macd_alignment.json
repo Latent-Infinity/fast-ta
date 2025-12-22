@@ -1,0 +1,44 @@
+{
+  "name": "MACD Output Alignment",
+  "description": "Verify all MACD outputs have identical length and aligned indices",
+  "indicator": "macd",
+  "rationale": "PRD §4.4: Multi-output indicators have aligned field lengths",
+  "test_cases": [
+    {
+      "name": "standard_params_12_26_9",
+      "input_length": 50,
+      "params": {"fast": 12, "slow": 26, "signal": 9},
+      "expected_output_length": 50,
+      "expected_lookback": 33,
+      "expected_nan_prefix": 33,
+      "properties": {
+        "macd_line_len_equals_signal_line_len": true,
+        "signal_line_len_equals_histogram_len": true,
+        "histogram_equals_macd_minus_signal": true
+      },
+      "notes": "All three outputs must have same length as input with identical NaN prefix"
+    },
+    {
+      "name": "custom_params_5_13_4",
+      "input_length": 30,
+      "params": {"fast": 5, "slow": 13, "signal": 4},
+      "expected_output_length": 30,
+      "expected_lookback": 15,
+      "expected_nan_prefix": 15,
+      "properties": {
+        "macd_line_len_equals_signal_line_len": true,
+        "signal_line_len_equals_histogram_len": true,
+        "histogram_equals_macd_minus_signal": true
+      },
+      "notes": "lookback = (slow - 1) + (signal - 1) = 12 + 3 = 15"
+    },
+    {
+      "name": "histogram_definition",
+      "description": "Histogram must equal MACD line minus signal line at every valid position",
+      "input_length": 40,
+      "params": {"fast": 12, "slow": 26, "signal": 9},
+      "property": "for all i where not NaN: histogram[i] == macd_line[i] - signal_line[i]",
+      "tolerance": 1e-10
+    }
+  ]
+}

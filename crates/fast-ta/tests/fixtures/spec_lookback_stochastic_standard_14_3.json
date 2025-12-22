@@ -1,0 +1,14 @@
+{
+  "expected": {
+    "expected_d_lookback": 15,
+    "expected_k_lookback": 13,
+    "expected_min_len": 16
+  },
+  "input": [],
+  "params": {
+    "d_period": 3,
+    "k_period": 14
+  },
+  "rationale": "PRD \u00a74.4: %K lookback = k_period - 1, %D lookback = k_period + d_period - 2",
+  "spec_version": "3.0"
+}

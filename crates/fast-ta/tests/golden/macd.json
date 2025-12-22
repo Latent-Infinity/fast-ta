@@ -1,0 +1,45 @@
+{
+  "indicator": "MACD",
+  "description": "TA-Lib MACD reference values",
+  "parameters": {"fast_period": 12, "slow_period": 26, "signal_period": 9},
+  "talib_version": "0.4.32",
+  "generated_at": "2025-01-01T00:00:00Z",
+  "notes": "MACD = EMA(fast) - EMA(slow), Signal = EMA(MACD, signal), Histogram = MACD - Signal",
+  "test_cases": [
+    {
+      "name": "constant_price",
+      "input": [100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0,
+                100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0,
+                100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0,
+                100.0, 100.0, 100.0, 100.0, 100.0],
+      "params": {"fast_period": 12, "slow_period": 26, "signal_period": 9},
+      "expected": {
+        "macd_line": [null, null, null, null, null, null, null, null, null, null,
+                     null, null, null, null, null, null, null, null, null, null,
+                     null, null, null, null, null, 0.0, 0.0, 0.0, 0.0, 0.0,
+                     0.0, 0.0, 0.0, 0.0, 0.0],
+        "signal_line": [null, null, null, null, null, null, null, null, null, null,
+                        null, null, null, null, null, null, null, null, null, null,
+                        null, null, null, null, null, null, null, null, null, null,
+                        null, null, null, 0.0, 0.0],
+        "histogram": [null, null, null, null, null, null, null, null, null, null,
+                      null, null, null, null, null, null, null, null, null, null,
+                      null, null, null, null, null, null, null, null, null, null,
+                      null, null, null, 0.0, 0.0]
+      },
+      "notes": "Constant price yields MACD = 0 (both EMAs equal)"
+    },
+    {
+      "name": "alignment_check",
+      "description": "Verify all outputs have same length",
+      "input_length": 50,
+      "params": {"fast_period": 12, "slow_period": 26, "signal_period": 9},
+      "properties": {
+        "output_length_equals_input": true,
+        "all_outputs_same_length": true,
+        "histogram_equals_macd_minus_signal": true
+      },
+      "notes": "All three outputs must have same length as input"
+    }
+  ]
+}

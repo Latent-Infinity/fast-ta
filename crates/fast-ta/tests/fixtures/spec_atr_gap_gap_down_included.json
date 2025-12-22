@@ -1,0 +1,31 @@
+{
+  "expected": {
+    "expected_tr": [
+      null,
+      7.5,
+      2.0
+    ]
+  },
+  "input": {
+    "close": [
+      19.5,
+      13.0,
+      12.0
+    ],
+    "high": [
+      20.0,
+      14.0,
+      13.0
+    ],
+    "low": [
+      19.0,
+      12.0,
+      11.0
+    ]
+  },
+  "params": {
+    "period": 1
+  },
+  "rationale": "PRD \u00a74.6: TR = max(H-L, |H-prev_close|, |L-prev_close|) to capture gaps",
+  "spec_version": "3.0"
+}

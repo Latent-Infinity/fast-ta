@@ -81,10 +81,13 @@ pub mod stochastic;
 // These re-exports allow users to import directly from `indicators` without
 // needing to specify the submodule, e.g., `use fast_ta::indicators::sma;`
 
-pub use atr::{atr, true_range};
-pub use bollinger::{bollinger, rolling_stddev, BollingerOutput};
-pub use ema::{ema, ema_wilder, ema_with_alpha};
-pub use macd::{macd, MacdOutput};
-pub use rsi::rsi;
-pub use sma::sma;
-pub use stochastic::{stochastic_fast, stochastic_full, stochastic_slow, StochasticOutput};
+pub use atr::{atr, atr_lookback, atr_min_len, true_range, true_range_lookback};
+pub use bollinger::{bollinger, bollinger_lookback, bollinger_min_len, rolling_stddev, BollingerOutput};
+pub use ema::{ema, ema_lookback, ema_min_len, ema_wilder, ema_with_alpha};
+pub use macd::{macd, macd_line_lookback, macd_min_len, macd_signal_lookback, MacdOutput};
+pub use rsi::{rsi, rsi_lookback, rsi_min_len};
+pub use sma::{sma, sma_lookback, sma_min_len};
+pub use stochastic::{
+    stochastic_d_lookback, stochastic_fast, stochastic_full, stochastic_k_lookback,
+    stochastic_min_len, stochastic_slow, StochasticOutput,
+};

@@ -1,0 +1,23 @@
+{
+  "expected": [
+    null,
+    null,
+    null,
+    50.0,
+    50.0,
+    50.0
+  ],
+  "input": [
+    50.0,
+    50.0,
+    50.0,
+    50.0,
+    50.0,
+    50.0
+  ],
+  "params": {
+    "period": 3
+  },
+  "rationale": "PRD \u00a74.6: All gains \u2192 RSI = 100, All losses \u2192 RSI = 0, No movement \u2192 RSI = 50",
+  "spec_version": "3.0"
+}

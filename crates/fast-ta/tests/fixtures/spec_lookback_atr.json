@@ -1,0 +1,22 @@
+{
+  "name": "ATR Lookback Period",
+  "description": "Verify ATR output length matches lookback formula",
+  "indicator": "atr",
+  "rationale": "PRD §4.4: ATR lookback = period (needs TR which starts at index 1)",
+  "test_cases": [
+    {
+      "name": "period_14",
+      "params": {"period": 14},
+      "expected_lookback": 14,
+      "expected_min_len": 15,
+      "notes": "lookback = period = 14"
+    },
+    {
+      "name": "period_5",
+      "params": {"period": 5},
+      "expected_lookback": 5,
+      "expected_min_len": 6,
+      "notes": "lookback = period = 5"
+    }
+  ]
+}

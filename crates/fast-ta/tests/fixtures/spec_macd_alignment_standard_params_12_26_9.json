@@ -1,0 +1,22 @@
+{
+  "expected": {
+    "expected_lookback": 33,
+    "expected_nan_prefix": 33,
+    "expected_output_length": 50,
+    "properties": {
+      "histogram_equals_macd_minus_signal": true,
+      "macd_line_len_equals_signal_line_len": true,
+      "signal_line_len_equals_histogram_len": true
+    }
+  },
+  "input": {
+    "length": 50
+  },
+  "params": {
+    "fast": 12,
+    "signal": 9,
+    "slow": 26
+  },
+  "rationale": "PRD \u00a74.4: Multi-output indicators have aligned field lengths",
+  "spec_version": "3.0"
+}

@@ -37,11 +37,20 @@
 //! RSI = 100 - (100 / (1 + RS))
 //! ```
 //!
+//! # Mathematical Conventions (PRD §4.5, §4.8)
+//!
+//! - **Wilder's Smoothing**: Uses α = 1/period, equivalent to standard EMA with
+//!   period 2n-1. This produces a slower-responding average than standard EMA.
+//! - **Initialization**: First average gain/loss is the SMA of the first `period`
+//!   price changes, per Wilder's original method.
+//!
 //! # Boundary Conditions
 //!
-//! - **All gains (no losses)**: RSI = 100
-//! - **All losses (no gains)**: RSI = 0
-//! - **No movement (no gains or losses)**: RSI = 50 (or NaN in some implementations)
+//! These are deterministic outputs for indeterminate operations, not NaN overrides:
+//!
+//! - **All gains (no losses)**: RSI = 100 (maximum bullish momentum)
+//! - **All losses (no gains)**: RSI = 0 (maximum bearish momentum)
+//! - **No movement (no gains or losses)**: RSI = 50 (neutral midpoint)
 //!
 //! # Example
 //!
@@ -60,7 +69,46 @@
 //! ```
 
 use crate::error::{Error, Result};
-use crate::traits::{SeriesElement, ValidatedInput};
+use crate::traits::SeriesElement;
+
+/// Returns the lookback period for RSI.
+///
+/// The lookback is the number of NaN values at the start of the output.
+/// For RSI, this is `period` (one more than typical indicators because
+/// RSI requires price changes, not raw prices).
+///
+/// # Example
+///
+/// ```
+/// use fast_ta::indicators::rsi::rsi_lookback;
+///
+/// assert_eq!(rsi_lookback(14), 14);
+/// assert_eq!(rsi_lookback(5), 5);
+/// ```
+#[inline]
+#[must_use]
+pub const fn rsi_lookback(period: usize) -> usize {
+    period
+}
+
+/// Returns the minimum input length required for RSI.
+///
+/// This is the smallest input size that will produce at least one valid output.
+/// For RSI, this is `period + 1` because we need `period` price changes.
+///
+/// # Example
+///
+/// ```
+/// use fast_ta::indicators::rsi::rsi_min_len;
+///
+/// assert_eq!(rsi_min_len(14), 15);
+/// assert_eq!(rsi_min_len(5), 6);
+/// ```
+#[inline]
+#[must_use]
+pub const fn rsi_min_len(period: usize) -> usize {
+    period + 1
+}
 
 /// Computes the Relative Strength Index (RSI) using Wilder's smoothing.
 ///
@@ -113,6 +161,7 @@ use crate::traits::{SeriesElement, ValidatedInput};
 /// assert!(!result[3].is_nan());
 /// assert!(result[3] >= 0.0 && result[3] <= 100.0);
 /// ```
+#[inline]
 #[must_use = "this returns a Result with the RSI values, which should be used"]
 pub fn rsi<T: SeriesElement>(data: &[T], period: usize) -> Result<Vec<T>> {
     // Validate inputs
@@ -164,15 +213,17 @@ pub fn rsi<T: SeriesElement>(data: &[T], period: usize) -> Result<Vec<T>> {
 /// assert!(output[0].is_nan());
 /// assert!(!output[3].is_nan());
 /// ```
+#[inline]
 #[must_use = "this returns a Result with the count of valid RSI values"]
 pub fn rsi_into<T: SeriesElement>(data: &[T], period: usize, output: &mut [T]) -> Result<usize> {
     // Validate inputs
     validate_rsi_inputs(data, period)?;
 
     if output.len() < data.len() {
-        return Err(Error::InsufficientData {
+        return Err(Error::BufferTooSmall {
             required: data.len(),
             actual: output.len(),
+            indicator: "rsi",
         });
     }
 
@@ -189,15 +240,15 @@ pub fn rsi_into<T: SeriesElement>(data: &[T], period: usize, output: &mut [T]) -
 }
 
 /// Validates RSI inputs.
+///
+/// RSI requires `period + 1` data points (one extra for the initial price change).
+#[inline]
 fn validate_rsi_inputs<T: SeriesElement>(data: &[T], period: usize) -> Result<()> {
-    if period == 0 {
-        return Err(Error::InvalidPeriod {
-            period,
-            reason: "period must be at least 1",
-        });
-    }
+    crate::traits::validate_period(period)?;
 
-    data.validate_not_empty()?;
+    if data.is_empty() {
+        return Err(Error::EmptyInput);
+    }
 
     // RSI needs at least period + 1 data points:
     // - period data points to calculate the first period changes
@@ -206,6 +257,7 @@ fn validate_rsi_inputs<T: SeriesElement>(data: &[T], period: usize) -> Result<()
         return Err(Error::InsufficientData {
             required: period + 1,
             actual: data.len(),
+            indicator: "rsi",
         });
     }
 
@@ -597,7 +649,8 @@ mod tests {
             result,
             Err(Error::InsufficientData {
                 required: 6,
-                actual: 3
+                actual: 3,
+                ..
             })
         ));
     }
@@ -660,7 +713,7 @@ mod tests {
         let mut output = vec![0.0_f64; 3]; // Too short
         let result = rsi_into(&data, 3, &mut output);
 
-        assert!(matches!(result, Err(Error::InsufficientData { .. })));
+        assert!(matches!(result, Err(Error::BufferTooSmall { .. })));
     }
 
     #[test]

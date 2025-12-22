@@ -15,6 +15,14 @@
 //!    - First ATR = SMA of first `period` TR values
 //!    - Subsequent ATR values use Wilder's formula
 //!
+//! # Mathematical Conventions (PRD §4.6, §4.8)
+//!
+//! - **Wilder's Smoothing**: Uses α = 1/period, which is equivalent to standard
+//!   EMA with period 2n-1. This produces a slower-responding average than
+//!   standard EMA with the same period.
+//! - **Initialization**: The first ATR value is the simple average (SMA) of the
+//!   first `period` True Range values, per Wilder's original method (PRD §4.6).
+//!
 //! # Formula
 //!
 //! ```text
@@ -67,7 +75,64 @@
 //! ```
 
 use crate::error::{Error, Result};
-use crate::traits::{SeriesElement, ValidatedInput};
+use crate::traits::SeriesElement;
+
+/// Returns the lookback period for ATR.
+///
+/// The lookback is the number of NaN values at the start of the output.
+/// For ATR, this is `period` (because True Range starts at index 1,
+/// then we need `period` TR values for the initial SMA).
+///
+/// # Example
+///
+/// ```
+/// use fast_ta::indicators::atr::atr_lookback;
+///
+/// assert_eq!(atr_lookback(14), 14);
+/// assert_eq!(atr_lookback(5), 5);
+/// ```
+#[inline]
+#[must_use]
+pub const fn atr_lookback(period: usize) -> usize {
+    period
+}
+
+/// Returns the minimum input length required for ATR.
+///
+/// This is the smallest input size that will produce at least one valid output.
+/// For ATR, this is `period + 1` (one extra for the initial True Range).
+///
+/// # Example
+///
+/// ```
+/// use fast_ta::indicators::atr::atr_min_len;
+///
+/// assert_eq!(atr_min_len(14), 15);
+/// assert_eq!(atr_min_len(5), 6);
+/// ```
+#[inline]
+#[must_use]
+pub const fn atr_min_len(period: usize) -> usize {
+    period + 1
+}
+
+/// Returns the lookback period for True Range.
+///
+/// True Range has a lookback of 1 (first value is NaN because
+/// it requires the previous close).
+///
+/// # Example
+///
+/// ```
+/// use fast_ta::indicators::atr::true_range_lookback;
+///
+/// assert_eq!(true_range_lookback(), 1);
+/// ```
+#[inline]
+#[must_use]
+pub const fn true_range_lookback() -> usize {
+    1
+}
 
 /// Computes the True Range (TR) for a series of OHLC data.
 ///
@@ -175,9 +240,10 @@ pub fn true_range_into<T: SeriesElement>(
     let n = high.len();
 
     if output.len() < n {
-        return Err(Error::InsufficientData {
+        return Err(Error::BufferTooSmall {
             required: n,
             actual: output.len(),
+            indicator: "true_range",
         });
     }
 
@@ -324,9 +390,10 @@ pub fn atr_into<T: SeriesElement>(
     let n = high.len();
 
     if output.len() < n {
-        return Err(Error::InsufficientData {
+        return Err(Error::BufferTooSmall {
             required: n,
             actual: output.len(),
+            indicator: "atr",
         });
     }
 
@@ -343,22 +410,23 @@ pub fn atr_into<T: SeriesElement>(
 }
 
 /// Validates OHLC inputs have matching lengths and are not empty.
+#[inline]
 fn validate_ohlc_inputs<T: SeriesElement>(high: &[T], low: &[T], close: &[T]) -> Result<()> {
-    high.validate_not_empty()?;
+    if high.is_empty() {
+        return Err(Error::EmptyInput);
+    }
 
     let n = high.len();
 
     if low.len() != n {
-        return Err(Error::InsufficientData {
-            required: n,
-            actual: low.len(),
+        return Err(Error::LengthMismatch {
+            description: format!("high has {} elements, low has {}", n, low.len()),
         });
     }
 
     if close.len() != n {
-        return Err(Error::InsufficientData {
-            required: n,
-            actual: close.len(),
+        return Err(Error::LengthMismatch {
+            description: format!("high has {} elements, close has {}", n, close.len()),
         });
     }
 
@@ -390,6 +458,7 @@ fn validate_atr_inputs<T: SeriesElement>(
         return Err(Error::InsufficientData {
             required: period + 1,
             actual: high.len(),
+            indicator: "atr",
         });
     }
 
@@ -600,7 +669,7 @@ mod tests {
         let close = vec![9.5, 10.5, 11.5];
 
         let result = true_range(&high, &low, &close);
-        assert!(matches!(result, Err(Error::InsufficientData { .. })));
+        assert!(matches!(result, Err(Error::LengthMismatch { .. })));
     }
 
     // ==================== ATR Basic Tests ====================
@@ -961,7 +1030,7 @@ mod tests {
         let close = vec![9.5, 10.5, 11.5, 12.5, 13.5, 14.5];
 
         let result = atr(&high, &low, &close, 3);
-        assert!(matches!(result, Err(Error::InsufficientData { .. })));
+        assert!(matches!(result, Err(Error::LengthMismatch { .. })));
     }
 
     #[test]
@@ -1034,7 +1103,7 @@ mod tests {
         let mut output = vec![0.0_f64; 5]; // Too short
 
         let result = atr_into(&high, &low, &close, 3, &mut output);
-        assert!(matches!(result, Err(Error::InsufficientData { .. })));
+        assert!(matches!(result, Err(Error::BufferTooSmall { .. })));
     }
 
     #[test]

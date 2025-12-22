@@ -1,0 +1,12 @@
+{
+  "expected": {
+    "expected_lookback": 14,
+    "expected_min_len": 15
+  },
+  "input": [],
+  "params": {
+    "period": 14
+  },
+  "rationale": "PRD \u00a74.4: ATR lookback = period (needs TR which starts at index 1)",
+  "spec_version": "3.0"
+}

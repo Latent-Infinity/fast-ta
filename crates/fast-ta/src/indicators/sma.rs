@@ -38,7 +38,49 @@
 //! ```
 
 use crate::error::{Error, Result};
-use crate::traits::{SeriesElement, ValidatedInput};
+use crate::traits::SeriesElement;
+
+/// Returns the lookback period for SMA.
+///
+/// The lookback is the number of NaN values at the start of the output.
+/// For SMA, this is `period - 1`.
+///
+/// # Example
+///
+/// ```
+/// use fast_ta::indicators::sma::sma_lookback;
+///
+/// assert_eq!(sma_lookback(5), 4);
+/// assert_eq!(sma_lookback(14), 13);
+/// ```
+#[inline]
+#[must_use]
+pub const fn sma_lookback(period: usize) -> usize {
+    if period == 0 {
+        0
+    } else {
+        period - 1
+    }
+}
+
+/// Returns the minimum input length required for SMA.
+///
+/// This is the smallest input size that will produce at least one valid output.
+/// For SMA, this equals the period.
+///
+/// # Example
+///
+/// ```
+/// use fast_ta::indicators::sma::sma_min_len;
+///
+/// assert_eq!(sma_min_len(5), 5);
+/// assert_eq!(sma_min_len(14), 14);
+/// ```
+#[inline]
+#[must_use]
+pub const fn sma_min_len(period: usize) -> usize {
+    period
+}
 
 /// Computes the Simple Moving Average (SMA) of a data series.
 ///
@@ -84,24 +126,11 @@ use crate::traits::{SeriesElement, ValidatedInput};
 /// assert!(result[1].is_nan());
 /// assert!((result[2] - 11.0).abs() < 1e-10);
 /// ```
+#[inline]
 #[must_use = "this returns a Result with the SMA values, which should be used"]
 pub fn sma<T: SeriesElement>(data: &[T], period: usize) -> Result<Vec<T>> {
     // Validate inputs
-    if period == 0 {
-        return Err(Error::InvalidPeriod {
-            period,
-            reason: "period must be at least 1",
-        });
-    }
-
-    data.validate_not_empty()?;
-
-    if data.len() < period {
-        return Err(Error::InsufficientData {
-            required: period,
-            actual: data.len(),
-        });
-    }
+    crate::traits::validate_indicator_input(data, period, "sma")?;
 
     // Convert period to T for division
     let period_t = T::from_usize(period)?;
@@ -189,29 +218,17 @@ pub fn sma<T: SeriesElement>(data: &[T], period: usize) -> Result<Vec<T>> {
 /// assert!(output[0].is_nan());
 /// assert!((output[2] - 2.0).abs() < 1e-10);
 /// ```
+#[inline]
 #[must_use = "this returns a Result with the count of valid SMA values"]
 pub fn sma_into<T: SeriesElement>(data: &[T], period: usize, output: &mut [T]) -> Result<usize> {
     // Validate inputs
-    if period == 0 {
-        return Err(Error::InvalidPeriod {
-            period,
-            reason: "period must be at least 1",
-        });
-    }
-
-    data.validate_not_empty()?;
-
-    if data.len() < period {
-        return Err(Error::InsufficientData {
-            required: period,
-            actual: data.len(),
-        });
-    }
+    crate::traits::validate_indicator_input(data, period, "sma")?;
 
     if output.len() < data.len() {
-        return Err(Error::InsufficientData {
+        return Err(Error::BufferTooSmall {
             required: data.len(),
             actual: output.len(),
+            indicator: "sma",
         });
     }
 
@@ -500,7 +517,8 @@ mod tests {
             result,
             Err(Error::InsufficientData {
                 required: 5,
-                actual: 3
+                actual: 3,
+                ..
             })
         ));
     }
@@ -541,7 +559,7 @@ mod tests {
         let mut output = vec![0.0_f64; 3]; // Too short
         let result = sma_into(&data, 3, &mut output);
 
-        assert!(matches!(result, Err(Error::InsufficientData { .. })));
+        assert!(matches!(result, Err(Error::BufferTooSmall { .. })));
     }
 
     #[test]

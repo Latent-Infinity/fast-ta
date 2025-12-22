@@ -1,0 +1,19 @@
+{
+  "name": "RSI Wilder Smoothing",
+  "description": "Verify RSI uses Wilder's smoothing method (α = 1/period)",
+  "indicator": "rsi",
+  "rationale": "PRD §4.7: RSI uses Wilder's smoothing for average gain/loss calculation",
+  "test_cases": [
+    {
+      "name": "wilder_smoothing_formula",
+      "input": [44.0, 44.25, 44.5, 43.75, 44.5, 44.25, 44.0, 43.5],
+      "params": {"period": 5},
+      "expected_range": {
+        "index": 5,
+        "min": 0.0,
+        "max": 100.0
+      },
+      "notes": "Wilder formula: new_avg = (prev_avg * (period-1) + current) / period"
+    }
+  ]
+}

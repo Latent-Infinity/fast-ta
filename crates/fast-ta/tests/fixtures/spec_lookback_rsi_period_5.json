@@ -1,0 +1,12 @@
+{
+  "expected": {
+    "expected_lookback": 5,
+    "expected_min_len": 6
+  },
+  "input": [],
+  "params": {
+    "period": 5
+  },
+  "rationale": "PRD \u00a74.4: RSI lookback = period (needs period+1 data points for first valid)",
+  "spec_version": "3.0"
+}

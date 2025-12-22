@@ -1,0 +1,37 @@
+{
+  "expected": {
+    "expected_first_atr_is_sma": true,
+    "expected_first_valid_index": 3
+  },
+  "input": {
+    "close": [
+      11.0,
+      13.0,
+      12.0,
+      14.0,
+      13.0,
+      15.0
+    ],
+    "high": [
+      12.0,
+      14.0,
+      13.0,
+      15.0,
+      14.0,
+      16.0
+    ],
+    "low": [
+      10.0,
+      11.0,
+      11.0,
+      12.0,
+      12.0,
+      13.0
+    ]
+  },
+  "params": {
+    "period": 3
+  },
+  "rationale": "PRD \u00a74.7: First ATR = SMA of first period TRs, then Wilder smoothing",
+  "spec_version": "3.0"
+}

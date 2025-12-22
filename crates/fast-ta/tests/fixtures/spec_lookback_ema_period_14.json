@@ -1,0 +1,12 @@
+{
+  "expected": {
+    "expected_lookback": 13,
+    "expected_min_len": 14
+  },
+  "input": [],
+  "params": {
+    "period": 14
+  },
+  "rationale": "PRD \u00a74.4: EMA lookback = period - 1 (same as SMA for seed calculation)",
+  "spec_version": "3.0"
+}

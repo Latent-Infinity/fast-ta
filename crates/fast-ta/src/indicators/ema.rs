@@ -46,7 +46,49 @@
 //! ```
 
 use crate::error::{Error, Result};
-use crate::traits::{SeriesElement, ValidatedInput};
+use crate::traits::SeriesElement;
+
+/// Returns the lookback period for EMA.
+///
+/// The lookback is the number of NaN values at the start of the output.
+/// For EMA, this is `period - 1`.
+///
+/// # Example
+///
+/// ```
+/// use fast_ta::indicators::ema::ema_lookback;
+///
+/// assert_eq!(ema_lookback(5), 4);
+/// assert_eq!(ema_lookback(14), 13);
+/// ```
+#[inline]
+#[must_use]
+pub const fn ema_lookback(period: usize) -> usize {
+    if period == 0 {
+        0
+    } else {
+        period - 1
+    }
+}
+
+/// Returns the minimum input length required for EMA.
+///
+/// This is the smallest input size that will produce at least one valid output.
+/// For EMA, this equals the period.
+///
+/// # Example
+///
+/// ```
+/// use fast_ta::indicators::ema::ema_min_len;
+///
+/// assert_eq!(ema_min_len(5), 5);
+/// assert_eq!(ema_min_len(14), 14);
+/// ```
+#[inline]
+#[must_use]
+pub const fn ema_min_len(period: usize) -> usize {
+    period
+}
 
 /// Computes the Exponential Moving Average (EMA) using standard smoothing.
 ///
@@ -86,6 +128,7 @@ use crate::traits::{SeriesElement, ValidatedInput};
 /// assert!(result[1].is_nan());
 /// // EMA starts from index 2 with SMA seed, then uses exponential smoothing
 /// ```
+#[inline]
 #[must_use = "this returns a Result with the EMA values, which should be used"]
 pub fn ema<T: SeriesElement>(data: &[T], period: usize) -> Result<Vec<T>> {
     let alpha = compute_standard_alpha::<T>(period)?;
@@ -128,6 +171,7 @@ pub fn ema<T: SeriesElement>(data: &[T], period: usize) -> Result<Vec<T>> {
 /// assert_eq!(valid_count, 3);
 /// assert!(output[0].is_nan());
 /// ```
+#[inline]
 #[must_use = "this returns a Result with the count of valid EMA values"]
 pub fn ema_into<T: SeriesElement>(data: &[T], period: usize, output: &mut [T]) -> Result<usize> {
     let alpha = compute_standard_alpha::<T>(period)?;
@@ -167,6 +211,7 @@ pub fn ema_into<T: SeriesElement>(data: &[T], period: usize, output: &mut [T]) -
 ///
 /// // Wilder's smoothing is slower than standard EMA
 /// ```
+#[inline]
 #[must_use = "this returns a Result with the EMA values using Wilder's smoothing"]
 pub fn ema_wilder<T: SeriesElement>(data: &[T], period: usize) -> Result<Vec<T>> {
     let alpha = compute_wilder_alpha::<T>(period)?;
@@ -192,6 +237,7 @@ pub fn ema_wilder<T: SeriesElement>(data: &[T], period: usize) -> Result<Vec<T>>
 /// - The period is zero (`Error::InvalidPeriod`)
 /// - The input data is shorter than the period (`Error::InsufficientData`)
 /// - The output buffer is shorter than the input data
+#[inline]
 #[must_use = "this returns a Result with the count of valid Wilder EMA values"]
 pub fn ema_wilder_into<T: SeriesElement>(
     data: &[T],
@@ -233,10 +279,11 @@ pub fn ema_wilder_into<T: SeriesElement>(
 /// let alpha = 0.5; // Custom 50% weighting
 /// let result = ema_with_alpha(&data, 3, alpha).unwrap();
 /// ```
+#[inline]
 #[must_use = "this returns a Result with the EMA values, which should be used"]
 pub fn ema_with_alpha<T: SeriesElement>(data: &[T], period: usize, alpha: T) -> Result<Vec<T>> {
     // Validate inputs
-    validate_ema_inputs(data, period)?;
+    crate::traits::validate_indicator_input(data, period, "ema")?;
 
     // Initialize result vector with NaN
     let mut result = vec![T::nan(); data.len()];
@@ -267,6 +314,7 @@ pub fn ema_with_alpha<T: SeriesElement>(data: &[T], period: usize, alpha: T) -> 
 /// - The period is zero (`Error::InvalidPeriod`)
 /// - The input data is shorter than the period (`Error::InsufficientData`)
 /// - The output buffer is shorter than the input data
+#[inline]
 #[must_use = "this returns a Result with the count of valid EMA values"]
 pub fn ema_with_alpha_into<T: SeriesElement>(
     data: &[T],
@@ -275,12 +323,13 @@ pub fn ema_with_alpha_into<T: SeriesElement>(
     output: &mut [T],
 ) -> Result<usize> {
     // Validate inputs
-    validate_ema_inputs(data, period)?;
+    crate::traits::validate_indicator_input(data, period, "ema")?;
 
     if output.len() < data.len() {
-        return Err(Error::InsufficientData {
+        return Err(Error::BufferTooSmall {
             required: data.len(),
             actual: output.len(),
+            indicator: "ema",
         });
     }
 
@@ -322,27 +371,6 @@ fn compute_wilder_alpha<T: SeriesElement>(period: usize) -> Result<T> {
     let one = T::one();
     let period_t = T::from_usize(period)?;
     Ok(one / period_t)
-}
-
-/// Validates EMA inputs.
-fn validate_ema_inputs<T: SeriesElement>(data: &[T], period: usize) -> Result<()> {
-    if period == 0 {
-        return Err(Error::InvalidPeriod {
-            period,
-            reason: "period must be at least 1",
-        });
-    }
-
-    data.validate_not_empty()?;
-
-    if data.len() < period {
-        return Err(Error::InsufficientData {
-            required: period,
-            actual: data.len(),
-        });
-    }
-
-    Ok(())
 }
 
 /// Core EMA computation algorithm.
@@ -708,7 +736,8 @@ mod tests {
             result,
             Err(Error::InsufficientData {
                 required: 5,
-                actual: 3
+                actual: 3,
+                ..
             })
         ));
     }
@@ -764,7 +793,7 @@ mod tests {
         let mut output = vec![0.0_f64; 3];
         let result = ema_into(&data, 3, &mut output);
 
-        assert!(matches!(result, Err(Error::InsufficientData { .. })));
+        assert!(matches!(result, Err(Error::BufferTooSmall { .. })));
     }
 
     #[test]

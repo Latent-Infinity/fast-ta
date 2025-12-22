@@ -54,7 +54,74 @@
 
 use crate::error::{Error, Result};
 use crate::indicators::ema::ema;
-use crate::traits::{SeriesElement, ValidatedInput};
+use crate::traits::SeriesElement;
+
+/// Returns the lookback period for the MACD line.
+///
+/// The MACD line lookback is `slow_period - 1` (first valid MACD line value).
+///
+/// # Example
+///
+/// ```
+/// use fast_ta::indicators::macd::macd_line_lookback;
+///
+/// assert_eq!(macd_line_lookback(26), 25);
+/// assert_eq!(macd_line_lookback(12), 11);
+/// ```
+#[inline]
+#[must_use]
+pub const fn macd_line_lookback(slow_period: usize) -> usize {
+    if slow_period == 0 {
+        0
+    } else {
+        slow_period - 1
+    }
+}
+
+/// Returns the lookback period for the MACD signal line and histogram.
+///
+/// The signal line lookback is `slow_period + signal_period - 2`.
+///
+/// # Example
+///
+/// ```
+/// use fast_ta::indicators::macd::macd_signal_lookback;
+///
+/// // Standard MACD (12, 26, 9): 26 + 9 - 2 = 33
+/// assert_eq!(macd_signal_lookback(26, 9), 33);
+/// ```
+#[inline]
+#[must_use]
+pub const fn macd_signal_lookback(slow_period: usize, signal_period: usize) -> usize {
+    if slow_period == 0 || signal_period == 0 {
+        0
+    } else {
+        slow_period + signal_period - 2
+    }
+}
+
+/// Returns the minimum input length required for full MACD output.
+///
+/// This is the smallest input size that will produce at least one valid
+/// signal line and histogram value.
+///
+/// # Example
+///
+/// ```
+/// use fast_ta::indicators::macd::macd_min_len;
+///
+/// // Standard MACD (12, 26, 9): 26 + 9 - 1 = 34
+/// assert_eq!(macd_min_len(26, 9), 34);
+/// ```
+#[inline]
+#[must_use]
+pub const fn macd_min_len(slow_period: usize, signal_period: usize) -> usize {
+    if slow_period == 0 || signal_period == 0 {
+        0
+    } else {
+        slow_period + signal_period - 1
+    }
+}
 
 /// The output of MACD calculation containing all three components.
 ///
@@ -154,6 +221,7 @@ impl<T: SeriesElement> MacdOutput<T> {
 /// // - Positive histogram: bullish momentum
 /// // - Negative histogram: bearish momentum
 /// ```
+#[inline]
 #[must_use = "this returns a Result with the MACD output, which should be used"]
 pub fn macd<T: SeriesElement>(
     data: &[T],
@@ -243,6 +311,7 @@ pub fn macd<T: SeriesElement>(
 ///     &mut macd_line, &mut signal_line, &mut histogram
 /// ).unwrap();
 /// ```
+#[inline]
 #[must_use = "this returns a Result with the valid MACD counts"]
 pub fn macd_into<T: SeriesElement>(
     data: &[T],
@@ -260,21 +329,24 @@ pub fn macd_into<T: SeriesElement>(
 
     // Validate output buffer sizes
     if macd_output.len() < n {
-        return Err(Error::InsufficientData {
+        return Err(Error::BufferTooSmall {
             required: n,
             actual: macd_output.len(),
+            indicator: "macd",
         });
     }
     if signal_output.len() < n {
-        return Err(Error::InsufficientData {
+        return Err(Error::BufferTooSmall {
             required: n,
             actual: signal_output.len(),
+            indicator: "macd",
         });
     }
     if histogram_output.len() < n {
-        return Err(Error::InsufficientData {
+        return Err(Error::BufferTooSmall {
             required: n,
             actual: histogram_output.len(),
+            indicator: "macd",
         });
     }
 
@@ -320,6 +392,7 @@ pub fn macd_into<T: SeriesElement>(
 }
 
 /// Validates MACD inputs.
+#[inline]
 fn validate_macd_inputs<T: SeriesElement>(
     data: &[T],
     fast_period: usize,
@@ -353,7 +426,9 @@ fn validate_macd_inputs<T: SeriesElement>(
     }
 
     // Validate data
-    data.validate_not_empty()?;
+    if data.is_empty() {
+        return Err(Error::EmptyInput);
+    }
 
     // Minimum required data: slow_period (for slow EMA) + signal_period - 1 (for signal EMA)
     // Actually, we need at least slow_period for a valid MACD line,
@@ -363,6 +438,7 @@ fn validate_macd_inputs<T: SeriesElement>(
         return Err(Error::InsufficientData {
             required: min_required,
             actual: data.len(),
+            indicator: "macd",
         });
     }
 
@@ -846,7 +922,7 @@ mod tests {
 
         let result = macd_into(&data, 5, 10, 3, &mut macd_line, &mut signal_line, &mut histogram);
 
-        assert!(matches!(result, Err(Error::InsufficientData { .. })));
+        assert!(matches!(result, Err(Error::BufferTooSmall { .. })));
     }
 
     #[test]

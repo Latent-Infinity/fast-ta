@@ -1,0 +1,11 @@
+{
+  "expected": {
+    "expected_lookback": 4
+  },
+  "input": [],
+  "params": {
+    "period": 5
+  },
+  "rationale": "PRD \u00a74.5: Output shape is trimmed, first lookback values are NaN",
+  "spec_version": "3.0"
+}

@@ -14,11 +14,22 @@
 //! 2. Rolling standard deviation is computed using a rolling sum of squares approach
 //! 3. Upper and lower bands are computed as middle ± k × stddev
 //!
+//! # Mathematical Conventions (PRD §4.8)
+//!
+//! - **Population Standard Deviation**: Uses ÷n, not ÷(n-1). This matches TA-Lib and most
+//!   financial charting platforms. Users migrating from sample-stddev implementations
+//!   (e.g., Excel) may see slightly narrower bands.
+//! - **Variance Algorithm**: Sum-of-squares method is used for O(n) computation with
+//!   adequate numerical stability for typical financial data.
+//! - **Precision Note**: For extremely large magnitude data with small variance,
+//!   sum-of-squares may lose precision due to catastrophic cancellation.
+//!   Users with such data should pre-scale inputs.
+//!
 //! # Formula
 //!
 //! ```text
 //! Middle Band = SMA(price, period)
-//! Standard Deviation = sqrt(sum((price - SMA)^2) / period)
+//! Standard Deviation = sqrt(sum((price - SMA)^2) / period)  // population stddev (÷n)
 //! Upper Band = Middle Band + (k × Standard Deviation)
 //! Lower Band = Middle Band - (k × Standard Deviation)
 //! ```
@@ -48,7 +59,49 @@
 use num_traits::Float;
 
 use crate::error::{Error, Result};
-use crate::traits::{SeriesElement, ValidatedInput};
+use crate::traits::SeriesElement;
+
+/// Returns the lookback period for Bollinger Bands.
+///
+/// The lookback is the number of NaN values at the start of the output.
+/// For Bollinger Bands, this is `period - 1`.
+///
+/// # Example
+///
+/// ```
+/// use fast_ta::indicators::bollinger::bollinger_lookback;
+///
+/// assert_eq!(bollinger_lookback(20), 19);
+/// assert_eq!(bollinger_lookback(5), 4);
+/// ```
+#[inline]
+#[must_use]
+pub const fn bollinger_lookback(period: usize) -> usize {
+    if period == 0 {
+        0
+    } else {
+        period - 1
+    }
+}
+
+/// Returns the minimum input length required for Bollinger Bands.
+///
+/// This is the smallest input size that will produce at least one valid output.
+/// For Bollinger Bands, this equals the period.
+///
+/// # Example
+///
+/// ```
+/// use fast_ta::indicators::bollinger::bollinger_min_len;
+///
+/// assert_eq!(bollinger_min_len(20), 20);
+/// assert_eq!(bollinger_min_len(5), 5);
+/// ```
+#[inline]
+#[must_use]
+pub const fn bollinger_min_len(period: usize) -> usize {
+    period
+}
 
 /// Output structure containing all three Bollinger Bands.
 ///
@@ -125,12 +178,15 @@ pub fn bollinger<T: SeriesElement>(
         });
     }
 
-    data.validate_not_empty()?;
+    if data.is_empty() {
+        return Err(Error::EmptyInput);
+    }
 
     if data.len() < period {
         return Err(Error::InsufficientData {
             required: period,
             actual: data.len(),
+            indicator: "bollinger",
         });
     }
 
@@ -266,32 +322,38 @@ pub fn bollinger_into<T: SeriesElement>(
         });
     }
 
-    data.validate_not_empty()?;
+    if data.is_empty() {
+        return Err(Error::EmptyInput);
+    }
 
     if data.len() < period {
         return Err(Error::InsufficientData {
             required: period,
             actual: data.len(),
+            indicator: "bollinger",
         });
     }
 
     // Validate output buffers
     if output.middle.len() < data.len() {
-        return Err(Error::InsufficientData {
+        return Err(Error::BufferTooSmall {
             required: data.len(),
             actual: output.middle.len(),
+            indicator: "bollinger",
         });
     }
     if output.upper.len() < data.len() {
-        return Err(Error::InsufficientData {
+        return Err(Error::BufferTooSmall {
             required: data.len(),
             actual: output.upper.len(),
+            indicator: "bollinger",
         });
     }
     if output.lower.len() < data.len() {
-        return Err(Error::InsufficientData {
+        return Err(Error::BufferTooSmall {
             required: data.len(),
             actual: output.lower.len(),
+            indicator: "bollinger",
         });
     }
 
@@ -422,12 +484,15 @@ pub fn rolling_stddev<T: SeriesElement>(data: &[T], period: usize) -> Result<Vec
         });
     }
 
-    data.validate_not_empty()?;
+    if data.is_empty() {
+        return Err(Error::EmptyInput);
+    }
 
     if data.len() < period {
         return Err(Error::InsufficientData {
             required: period,
             actual: data.len(),
+            indicator: "rolling_stddev",
         });
     }
 
@@ -526,19 +591,23 @@ pub fn rolling_stddev_into<T: SeriesElement>(
         });
     }
 
-    data.validate_not_empty()?;
+    if data.is_empty() {
+        return Err(Error::EmptyInput);
+    }
 
     if data.len() < period {
         return Err(Error::InsufficientData {
             required: period,
             actual: data.len(),
+            indicator: "rolling_stddev",
         });
     }
 
     if output.len() < data.len() {
-        return Err(Error::InsufficientData {
+        return Err(Error::BufferTooSmall {
             required: data.len(),
             actual: output.len(),
+            indicator: "rolling_stddev",
         });
     }
 
@@ -910,7 +979,8 @@ mod tests {
             result,
             Err(Error::InsufficientData {
                 required: 5,
-                actual: 3
+                actual: 3,
+                ..
             })
         ));
     }
@@ -962,7 +1032,7 @@ mod tests {
         };
         let result = bollinger_into(&data, 3, 2.0, &mut output);
 
-        assert!(matches!(result, Err(Error::InsufficientData { .. })));
+        assert!(matches!(result, Err(Error::BufferTooSmall { .. })));
     }
 
     #[test]

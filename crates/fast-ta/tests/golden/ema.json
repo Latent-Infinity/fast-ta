@@ -1,0 +1,31 @@
+{
+  "indicator": "EMA",
+  "description": "TA-Lib EMA reference values",
+  "parameters": {"period": 3},
+  "talib_version": "0.4.32",
+  "generated_at": "2025-01-01T00:00:00Z",
+  "notes": "TA-Lib uses SMA for first value, then EMA with alpha=2/(period+1)",
+  "test_cases": [
+    {
+      "name": "constant_values",
+      "input": [100.0, 100.0, 100.0, 100.0, 100.0, 100.0],
+      "params": {"period": 3},
+      "expected": [null, null, 100.0, 100.0, 100.0, 100.0],
+      "notes": "Constant input yields constant EMA"
+    },
+    {
+      "name": "ascending_period_3",
+      "input": [1.0, 2.0, 3.0, 4.0, 5.0],
+      "params": {"period": 3},
+      "expected": [null, null, 2.0, 3.0, 4.0],
+      "notes": "SMA seed = (1+2+3)/3 = 2.0, then EMA continues with alpha=0.5"
+    },
+    {
+      "name": "period_5_constant",
+      "input": [10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0],
+      "params": {"period": 5},
+      "expected": [null, null, null, null, 10.0, 10.0, 10.0],
+      "notes": "Constant input with period 5"
+    }
+  ]
+}

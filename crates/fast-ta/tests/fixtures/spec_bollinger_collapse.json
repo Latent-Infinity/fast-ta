@@ -1,0 +1,38 @@
+{
+  "name": "Bollinger Bands Collapse",
+  "description": "Verify bands collapse to mean for constant input (stddev = 0)",
+  "indicator": "bollinger",
+  "rationale": "PRD §4.5: Constant series → stddev = 0 → bands collapse to middle (upper = lower = middle)",
+  "test_cases": [
+    {
+      "name": "constant_integer",
+      "input": [100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0],
+      "params": {"period": 5, "num_std_dev": 2.0},
+      "expected": {
+        "middle": [null, null, null, null, 100.0, 100.0, 100.0],
+        "upper": [null, null, null, null, 100.0, 100.0, 100.0],
+        "lower": [null, null, null, null, 100.0, 100.0, 100.0]
+      },
+      "notes": "When stddev = 0, upper = middle + 0 = middle, lower = middle - 0 = middle"
+    },
+    {
+      "name": "constant_decimal",
+      "input": [42.5, 42.5, 42.5, 42.5, 42.5],
+      "params": {"period": 3, "num_std_dev": 2.0},
+      "expected": {
+        "middle": [null, null, 42.5, 42.5, 42.5],
+        "upper": [null, null, 42.5, 42.5, 42.5],
+        "lower": [null, null, 42.5, 42.5, 42.5]
+      },
+      "notes": "Same behavior with decimal values"
+    },
+    {
+      "name": "zero_stddev_no_nan",
+      "description": "Verify no division-by-zero or NaN issues when stddev is exactly 0",
+      "input": [50.0, 50.0, 50.0, 50.0, 50.0],
+      "params": {"period": 3, "num_std_dev": 2.0},
+      "property": "no NaN in output except lookback positions",
+      "notes": "stddev = 0 is a valid case, not an error"
+    }
+  ]
+}

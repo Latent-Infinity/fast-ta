@@ -1,0 +1,35 @@
+{
+  "name": "Stochastic Midpoint (Flat Price)",
+  "description": "Verify %K = 50 when high equals low (indeterminate 0/0 case)",
+  "indicator": "stochastic",
+  "rationale": "PRD §4.5: high == low → %K = 50 (indeterminate operation defined as midpoint)",
+  "test_cases": [
+    {
+      "name": "flat_single_bar",
+      "high": [10.0, 12.0, 15.0, 15.0, 15.0],
+      "low": [8.0, 10.0, 15.0, 15.0, 15.0],
+      "close": [9.0, 11.0, 15.0, 15.0, 15.0],
+      "params": {"k_period": 3, "d_period": 1},
+      "expected_k_at_flat": 50.0,
+      "flat_indices": [4],
+      "notes": "When high[i] == low[i] for all bars in window, %K = 50"
+    },
+    {
+      "name": "all_flat_window",
+      "high": [50.0, 50.0, 50.0, 50.0, 50.0],
+      "low": [50.0, 50.0, 50.0, 50.0, 50.0],
+      "close": [50.0, 50.0, 50.0, 50.0, 50.0],
+      "params": {"k_period": 3, "d_period": 1},
+      "expected_k": [null, null, 50.0, 50.0, 50.0],
+      "notes": "Constant price: highest_high == lowest_low, so 0/0 → %K = 50"
+    },
+    {
+      "name": "mixed_flat_and_range",
+      "high": [20.0, 22.0, 25.0, 25.0, 25.0, 30.0],
+      "low": [18.0, 20.0, 25.0, 25.0, 25.0, 28.0],
+      "close": [19.0, 21.0, 25.0, 25.0, 25.0, 29.0],
+      "params": {"k_period": 3, "d_period": 1},
+      "notes": "Window [2,3,4] has h=l=25 for all, so %K[4] = 50. Window [3,4,5] has range, so normal calc."
+    }
+  ]
+}

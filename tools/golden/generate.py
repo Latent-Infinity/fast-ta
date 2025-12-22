@@ -35,7 +35,7 @@ except ImportError:
 
 
 # Configuration
-GOLDEN_DIR = Path("benches/golden")
+GOLDEN_DIR = Path("crates/fast-ta/tests/golden")
 DATA_SIZES = [1_000, 10_000, 100_000]  # Skip 1M for faster generation
 SEEDS = [42, 123, 456]
 

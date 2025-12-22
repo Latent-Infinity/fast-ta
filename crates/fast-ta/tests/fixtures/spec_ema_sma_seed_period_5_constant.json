@@ -1,0 +1,25 @@
+{
+  "expected": [
+    null,
+    null,
+    null,
+    null,
+    10.0,
+    10.0,
+    10.0
+  ],
+  "input": [
+    10.0,
+    10.0,
+    10.0,
+    10.0,
+    10.0,
+    10.0,
+    10.0
+  ],
+  "params": {
+    "period": 5
+  },
+  "rationale": "PRD \u00a74.7: EMA initialization uses SMA of first period values as seed",
+  "spec_version": "3.0"
+}

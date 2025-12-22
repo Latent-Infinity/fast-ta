@@ -1,0 +1,35 @@
+{
+  "name": "ATR Gap Handling",
+  "description": "Verify True Range includes gapping bars correctly",
+  "indicator": "atr",
+  "rationale": "PRD §4.6: TR = max(H-L, |H-prev_close|, |L-prev_close|) to capture gaps",
+  "test_cases": [
+    {
+      "name": "gap_up_included",
+      "high": [10.0, 15.0, 16.0],
+      "low": [9.0, 14.0, 15.0],
+      "close": [9.5, 14.5, 15.5],
+      "params": {"period": 1},
+      "expected_tr": [null, 5.5, 1.5],
+      "notes": "Gap up: prev_close=9.5, high=15 → |15-9.5|=5.5 > (15-14)=1, so TR[1]=5.5"
+    },
+    {
+      "name": "gap_down_included",
+      "high": [20.0, 14.0, 13.0],
+      "low": [19.0, 12.0, 11.0],
+      "close": [19.5, 13.0, 12.0],
+      "params": {"period": 1},
+      "expected_tr": [null, 7.5, 2.0],
+      "notes": "Gap down: prev_close=19.5, low=12 → |12-19.5|=7.5 > (14-12)=2, so TR[1]=7.5"
+    },
+    {
+      "name": "no_gap_standard_range",
+      "high": [50.0, 51.0, 52.0],
+      "low": [48.0, 49.0, 50.0],
+      "close": [49.0, 50.0, 51.0],
+      "params": {"period": 1},
+      "expected_tr": [null, 2.0, 2.0],
+      "notes": "No gap: TR = High - Low = 2.0"
+    }
+  ]
+}

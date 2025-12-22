@@ -26,6 +26,17 @@
 //! For the Slow and Full variants, an additional smoothing is applied to %K
 //! before computing %D.
 //!
+//! # Mathematical Conventions (PRD §4.5, §4.8)
+//!
+//! - **Zero Range Handling**: When `highest_high == lowest_low` (flat price over
+//!   the lookback window), %K = 50 (stable midpoint). This is a deterministic
+//!   output for an indeterminate operation (0/0), not a NaN override.
+//! - **NaN Precedence**: If any of `high`, `low`, or `close` in the required window
+//!   contains NaN, the output is NaN. NaN propagation takes priority over the
+//!   flat-price fallback.
+//! - **Rolling Extrema**: Uses monotonic deque for O(n) computation when
+//!   k_period ≥ 25, naive O(n×k) for smaller periods (per E04 findings).
+//!
 //! # Example
 //!
 //! ```
@@ -48,7 +59,73 @@
 //! ```
 
 use crate::error::{Error, Result};
-use crate::traits::{SeriesElement, ValidatedInput};
+use crate::traits::SeriesElement;
+
+/// Returns the lookback period for the Stochastic %K line.
+///
+/// The %K lookback is `k_period - 1`.
+///
+/// # Example
+///
+/// ```
+/// use fast_ta::indicators::stochastic::stochastic_k_lookback;
+///
+/// assert_eq!(stochastic_k_lookback(14), 13);
+/// assert_eq!(stochastic_k_lookback(5), 4);
+/// ```
+#[inline]
+#[must_use]
+pub const fn stochastic_k_lookback(k_period: usize) -> usize {
+    if k_period == 0 {
+        0
+    } else {
+        k_period - 1
+    }
+}
+
+/// Returns the lookback period for the Stochastic %D line.
+///
+/// The %D lookback is `k_period + d_period - 2`.
+///
+/// # Example
+///
+/// ```
+/// use fast_ta::indicators::stochastic::stochastic_d_lookback;
+///
+/// assert_eq!(stochastic_d_lookback(14, 3), 15);
+/// assert_eq!(stochastic_d_lookback(5, 3), 6);
+/// ```
+#[inline]
+#[must_use]
+pub const fn stochastic_d_lookback(k_period: usize, d_period: usize) -> usize {
+    if k_period == 0 || d_period == 0 {
+        0
+    } else {
+        k_period + d_period - 2
+    }
+}
+
+/// Returns the minimum input length required for Stochastic Oscillator.
+///
+/// This is the smallest input size that will produce at least one valid %D value.
+///
+/// # Example
+///
+/// ```
+/// use fast_ta::indicators::stochastic::stochastic_min_len;
+///
+/// assert_eq!(stochastic_min_len(14, 3), 16);
+/// assert_eq!(stochastic_min_len(5, 3), 7);
+/// ```
+#[inline]
+#[must_use]
+pub const fn stochastic_min_len(k_period: usize, d_period: usize) -> usize {
+    if k_period == 0 || d_period == 0 {
+        0
+    } else {
+        k_period + d_period - 1
+    }
+}
 
 /// Output structure containing %K and %D lines of the Stochastic Oscillator.
 ///
@@ -174,9 +251,10 @@ pub fn stochastic_fast_into<T: SeriesElement>(
 
     let n = close.len();
     if output.k.len() < n || output.d.len() < n {
-        return Err(Error::InsufficientData {
+        return Err(Error::BufferTooSmall {
             required: n,
             actual: output.k.len().min(output.d.len()),
+            indicator: "stochastic",
         });
     }
 
@@ -387,9 +465,10 @@ pub fn stochastic_full_into<T: SeriesElement>(
 
     let n = close.len();
     if output.k.len() < n || output.d.len() < n {
-        return Err(Error::InsufficientData {
+        return Err(Error::BufferTooSmall {
             required: n,
             actual: output.k.len().min(output.d.len()),
+            indicator: "stochastic",
         });
     }
 
@@ -448,15 +527,25 @@ fn validate_stochastic_inputs<T: SeriesElement>(
         });
     }
 
-    high.validate_not_empty()?;
-    low.validate_not_empty()?;
-    close.validate_not_empty()?;
+    if high.is_empty() {
+        return Err(Error::EmptyInput);
+    }
+    if low.is_empty() {
+        return Err(Error::EmptyInput);
+    }
+    if close.is_empty() {
+        return Err(Error::EmptyInput);
+    }
 
     // All inputs must have the same length
     if high.len() != low.len() || high.len() != close.len() {
-        return Err(Error::InsufficientData {
-            required: high.len(),
-            actual: low.len().min(close.len()),
+        return Err(Error::LengthMismatch {
+            description: format!(
+                "high has {} elements, low has {}, close has {}",
+                high.len(),
+                low.len(),
+                close.len()
+            ),
         });
     }
 
@@ -464,6 +553,7 @@ fn validate_stochastic_inputs<T: SeriesElement>(
         return Err(Error::InsufficientData {
             required: k_period,
             actual: high.len(),
+            indicator: "stochastic",
         });
     }
 
@@ -500,15 +590,25 @@ fn validate_stochastic_full_inputs<T: SeriesElement>(
         });
     }
 
-    high.validate_not_empty()?;
-    low.validate_not_empty()?;
-    close.validate_not_empty()?;
+    if high.is_empty() {
+        return Err(Error::EmptyInput);
+    }
+    if low.is_empty() {
+        return Err(Error::EmptyInput);
+    }
+    if close.is_empty() {
+        return Err(Error::EmptyInput);
+    }
 
     // All inputs must have the same length
     if high.len() != low.len() || high.len() != close.len() {
-        return Err(Error::InsufficientData {
-            required: high.len(),
-            actual: low.len().min(close.len()),
+        return Err(Error::LengthMismatch {
+            description: format!(
+                "high has {} elements, low has {}, close has {}",
+                high.len(),
+                low.len(),
+                close.len()
+            ),
         });
     }
 
@@ -516,6 +616,7 @@ fn validate_stochastic_full_inputs<T: SeriesElement>(
         return Err(Error::InsufficientData {
             required: k_period,
             actual: high.len(),
+            indicator: "stochastic",
         });
     }
 
@@ -953,7 +1054,8 @@ mod tests {
             result,
             Err(Error::InsufficientData {
                 required: 5,
-                actual: 3
+                actual: 3,
+                ..
             })
         ));
     }
@@ -965,7 +1067,7 @@ mod tests {
         let close = vec![0.75, 1.75, 2.75, 3.75, 4.75];
 
         let result = stochastic_fast(&high, &low, &close, 3, 2);
-        assert!(matches!(result, Err(Error::InsufficientData { .. })));
+        assert!(matches!(result, Err(Error::LengthMismatch { .. })));
     }
 
     // ==================== Into Variant Tests ====================
@@ -1029,7 +1131,7 @@ mod tests {
         };
 
         let result = stochastic_fast_into(&high, &low, &close, 3, 2, &mut output);
-        assert!(matches!(result, Err(Error::InsufficientData { .. })));
+        assert!(matches!(result, Err(Error::BufferTooSmall { .. })));
     }
 
     #[test]

@@ -22,6 +22,7 @@ pub mod rolling_extrema;
 
 // Rolling extrema kernel exports: O(n) rolling max/min using monotonic deque
 pub use rolling_extrema::{
-    rolling_extrema, rolling_extrema_into, rolling_max, rolling_max_into, rolling_max_naive,
-    rolling_min, rolling_min_into, rolling_min_naive, MonotonicDeque, RollingExtremaOutput,
+    rolling_extrema, rolling_extrema_into, rolling_extrema_lookback, rolling_extrema_min_len,
+    rolling_max, rolling_max_into, rolling_max_naive, rolling_min, rolling_min_into,
+    rolling_min_naive, MonotonicDeque, RollingExtremaOutput,
 };

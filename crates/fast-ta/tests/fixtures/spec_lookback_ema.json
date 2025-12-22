@@ -1,0 +1,22 @@
+{
+  "name": "EMA Lookback Period",
+  "description": "Verify EMA output length matches lookback formula",
+  "indicator": "ema",
+  "rationale": "PRD §4.4: EMA lookback = period - 1 (same as SMA for seed calculation)",
+  "test_cases": [
+    {
+      "name": "period_5",
+      "params": {"period": 5},
+      "expected_lookback": 4,
+      "expected_min_len": 5,
+      "notes": "lookback = period - 1 = 4"
+    },
+    {
+      "name": "period_14",
+      "params": {"period": 14},
+      "expected_lookback": 13,
+      "expected_min_len": 14,
+      "notes": "lookback = period - 1 = 13"
+    }
+  ]
+}

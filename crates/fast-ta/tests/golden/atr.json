@@ -1,0 +1,28 @@
+{
+  "indicator": "ATR",
+  "description": "TA-Lib ATR reference values",
+  "parameters": {"period": 14},
+  "talib_version": "0.4.32",
+  "generated_at": "2025-01-01T00:00:00Z",
+  "notes": "First ATR = SMA of first period TRs, then Wilder smoothing",
+  "test_cases": [
+    {
+      "name": "constant_range",
+      "high":  [12.0, 12.0, 12.0, 12.0, 12.0],
+      "low":   [10.0, 10.0, 10.0, 10.0, 10.0],
+      "close": [11.0, 11.0, 11.0, 11.0, 11.0],
+      "params": {"period": 3},
+      "expected": [null, null, null, 2.0, 2.0],
+      "notes": "Constant H-L range of 2.0"
+    },
+    {
+      "name": "gap_up",
+      "high":  [10.0, 15.0, 16.0],
+      "low":   [9.0, 14.0, 15.0],
+      "close": [9.5, 14.5, 15.5],
+      "params": {"period": 2},
+      "expected_tr": [null, 5.5, 1.5],
+      "notes": "Gap up from 9.5 to 14.0 creates TR = 5.5"
+    }
+  ]
+}

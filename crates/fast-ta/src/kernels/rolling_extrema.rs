@@ -45,7 +45,49 @@
 use std::collections::VecDeque;
 
 use crate::error::{Error, Result};
-use crate::traits::{SeriesElement, ValidatedInput};
+use crate::traits::SeriesElement;
+
+/// Returns the lookback period for rolling max/min.
+///
+/// The lookback is the number of NaN values at the start of the output.
+/// For rolling extrema, this is `period - 1`.
+///
+/// # Example
+///
+/// ```
+/// use fast_ta::kernels::rolling_extrema::rolling_extrema_lookback;
+///
+/// assert_eq!(rolling_extrema_lookback(5), 4);
+/// assert_eq!(rolling_extrema_lookback(14), 13);
+/// ```
+#[inline]
+#[must_use]
+pub const fn rolling_extrema_lookback(period: usize) -> usize {
+    if period == 0 {
+        0
+    } else {
+        period - 1
+    }
+}
+
+/// Returns the minimum input length required for rolling max/min.
+///
+/// This is the smallest input size that will produce at least one valid output.
+/// For rolling extrema, this equals the period.
+///
+/// # Example
+///
+/// ```
+/// use fast_ta::kernels::rolling_extrema::rolling_extrema_min_len;
+///
+/// assert_eq!(rolling_extrema_min_len(5), 5);
+/// assert_eq!(rolling_extrema_min_len(14), 14);
+/// ```
+#[inline]
+#[must_use]
+pub const fn rolling_extrema_min_len(period: usize) -> usize {
+    period
+}
 
 /// A monotonic deque for efficiently tracking rolling extrema.
 ///
@@ -295,12 +337,15 @@ pub fn rolling_max<T: SeriesElement>(data: &[T], period: usize) -> Result<Vec<T>
         });
     }
 
-    data.validate_not_empty()?;
+    if data.is_empty() {
+        return Err(Error::EmptyInput);
+    }
 
     if data.len() < period {
         return Err(Error::InsufficientData {
             required: period,
             actual: data.len(),
+            indicator: "rolling_max",
         });
     }
 
@@ -353,19 +398,23 @@ pub fn rolling_max_into<T: SeriesElement>(
         });
     }
 
-    data.validate_not_empty()?;
+    if data.is_empty() {
+        return Err(Error::EmptyInput);
+    }
 
     if data.len() < period {
         return Err(Error::InsufficientData {
             required: period,
             actual: data.len(),
+            indicator: "rolling_max",
         });
     }
 
     if output.len() < data.len() {
-        return Err(Error::InsufficientData {
+        return Err(Error::BufferTooSmall {
             required: data.len(),
             actual: output.len(),
+            indicator: "rolling_max",
         });
     }
 
@@ -443,12 +492,15 @@ pub fn rolling_min<T: SeriesElement>(data: &[T], period: usize) -> Result<Vec<T>
         });
     }
 
-    data.validate_not_empty()?;
+    if data.is_empty() {
+        return Err(Error::EmptyInput);
+    }
 
     if data.len() < period {
         return Err(Error::InsufficientData {
             required: period,
             actual: data.len(),
+            indicator: "rolling_min",
         });
     }
 
@@ -501,19 +553,23 @@ pub fn rolling_min_into<T: SeriesElement>(
         });
     }
 
-    data.validate_not_empty()?;
+    if data.is_empty() {
+        return Err(Error::EmptyInput);
+    }
 
     if data.len() < period {
         return Err(Error::InsufficientData {
             required: period,
             actual: data.len(),
+            indicator: "rolling_min",
         });
     }
 
     if output.len() < data.len() {
-        return Err(Error::InsufficientData {
+        return Err(Error::BufferTooSmall {
             required: data.len(),
             actual: output.len(),
+            indicator: "rolling_min",
         });
     }
 
@@ -589,12 +645,15 @@ pub fn rolling_extrema<T: SeriesElement>(data: &[T], period: usize) -> Result<Ro
         });
     }
 
-    data.validate_not_empty()?;
+    if data.is_empty() {
+        return Err(Error::EmptyInput);
+    }
 
     if data.len() < period {
         return Err(Error::InsufficientData {
             required: period,
             actual: data.len(),
+            indicator: "rolling_extrema",
         });
     }
 
@@ -654,26 +713,31 @@ pub fn rolling_extrema_into<T: SeriesElement>(
         });
     }
 
-    data.validate_not_empty()?;
+    if data.is_empty() {
+        return Err(Error::EmptyInput);
+    }
 
     if data.len() < period {
         return Err(Error::InsufficientData {
             required: period,
             actual: data.len(),
+            indicator: "rolling_extrema",
         });
     }
 
     if output.max.len() < data.len() {
-        return Err(Error::InsufficientData {
+        return Err(Error::BufferTooSmall {
             required: data.len(),
             actual: output.max.len(),
+            indicator: "rolling_extrema",
         });
     }
 
     if output.min.len() < data.len() {
-        return Err(Error::InsufficientData {
+        return Err(Error::BufferTooSmall {
             required: data.len(),
             actual: output.min.len(),
+            indicator: "rolling_extrema",
         });
     }
 
@@ -734,12 +798,15 @@ pub fn rolling_max_naive<T: SeriesElement>(data: &[T], period: usize) -> Result<
         });
     }
 
-    data.validate_not_empty()?;
+    if data.is_empty() {
+        return Err(Error::EmptyInput);
+    }
 
     if data.len() < period {
         return Err(Error::InsufficientData {
             required: period,
             actual: data.len(),
+            indicator: "rolling_max_naive",
         });
     }
 
@@ -790,12 +857,15 @@ pub fn rolling_min_naive<T: SeriesElement>(data: &[T], period: usize) -> Result<
         });
     }
 
-    data.validate_not_empty()?;
+    if data.is_empty() {
+        return Err(Error::EmptyInput);
+    }
 
     if data.len() < period {
         return Err(Error::InsufficientData {
             required: period,
             actual: data.len(),
+            indicator: "rolling_min_naive",
         });
     }
 
@@ -1166,7 +1236,8 @@ mod tests {
             result,
             Err(Error::InsufficientData {
                 required: 5,
-                actual: 3
+                actual: 3,
+                ..
             })
         ));
     }
@@ -1243,7 +1314,7 @@ mod tests {
         let mut output = vec![0.0_f64; 3]; // Too short
 
         let result = rolling_max_into(&data, 3, &mut output);
-        assert!(matches!(result, Err(Error::InsufficientData { .. })));
+        assert!(matches!(result, Err(Error::BufferTooSmall { .. })));
     }
 
     #[test]
@@ -1255,7 +1326,7 @@ mod tests {
         };
 
         let result = rolling_extrema_into(&data, 3, &mut output);
-        assert!(matches!(result, Err(Error::InsufficientData { .. })));
+        assert!(matches!(result, Err(Error::BufferTooSmall { .. })));
     }
 
     // ==================== NaN Handling Tests ====================

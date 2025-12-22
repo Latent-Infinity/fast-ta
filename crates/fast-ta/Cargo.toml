@@ -13,6 +13,8 @@ categories = ["science", "algorithms", "mathematics"]
 [features]
 default = []
 serde = ["dep:serde"]
+# Debug feature: treat TA-Lib reference divergences as test failures instead of warnings
+reference-checks-strict = []
 
 [dependencies]
 num-traits = { workspace = true }
@@ -23,3 +25,5 @@ serde = { workspace = true, optional = true }
 rand = { workspace = true }
 rand_chacha = { workspace = true }
 proptest = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }

@@ -1,0 +1,16 @@
+{
+  "expected": {
+    "property": "for all i where not NaN: histogram[i] == macd_line[i] - signal_line[i]",
+    "tolerance": 1e-10
+  },
+  "input": {
+    "length": 40
+  },
+  "params": {
+    "fast": 12,
+    "signal": 9,
+    "slow": 26
+  },
+  "rationale": "PRD \u00a74.4: Multi-output indicators have aligned field lengths",
+  "spec_version": "3.0"
+}

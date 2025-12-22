@@ -1,0 +1,15 @@
+{
+  "expected": {
+    "expected_macd_lookback": 12,
+    "expected_min_len": 16,
+    "expected_signal_lookback": 15
+  },
+  "input": [],
+  "params": {
+    "fast_period": 5,
+    "signal_period": 4,
+    "slow_period": 13
+  },
+  "rationale": "PRD \u00a74.4: MACD line lookback = slow - 1, Signal lookback = slow + signal - 2",
+  "spec_version": "3.0"
+}

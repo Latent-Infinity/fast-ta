@@ -1,0 +1,29 @@
+{
+  "indicator": "RSI",
+  "source": "TA-Lib 0.4.28",
+  "note": "Reference values using Wilder's smoothing (alpha = 1/period)",
+  "test_cases": [
+    {
+      "name": "all_gains",
+      "input": [10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0],
+      "params": {"period": 3},
+      "expected": [null, null, null, 100.0, 100.0, 100.0, 100.0],
+      "tolerance": 1e-6
+    },
+    {
+      "name": "all_losses",
+      "input": [20.0, 19.0, 18.0, 17.0, 16.0, 15.0, 14.0],
+      "params": {"period": 3},
+      "expected": [null, null, null, 0.0, 0.0, 0.0, 0.0],
+      "tolerance": 1e-6
+    },
+    {
+      "name": "mixed_movement",
+      "description": "Alternating gains and losses",
+      "input": [50.0, 51.0, 50.0, 51.0, 50.0, 51.0, 50.0],
+      "params": {"period": 3},
+      "expected_range": {"min": 30.0, "max": 70.0},
+      "tolerance": 1e-6
+    }
+  ]
+}

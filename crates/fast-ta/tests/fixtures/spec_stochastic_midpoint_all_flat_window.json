@@ -1,0 +1,40 @@
+{
+  "expected": {
+    "expected_k": [
+      null,
+      null,
+      50.0,
+      50.0,
+      50.0
+    ]
+  },
+  "input": {
+    "close": [
+      50.0,
+      50.0,
+      50.0,
+      50.0,
+      50.0
+    ],
+    "high": [
+      50.0,
+      50.0,
+      50.0,
+      50.0,
+      50.0
+    ],
+    "low": [
+      50.0,
+      50.0,
+      50.0,
+      50.0,
+      50.0
+    ]
+  },
+  "params": {
+    "d_period": 1,
+    "k_period": 3
+  },
+  "rationale": "PRD \u00a74.5: high == low \u2192 %K = 50 (indeterminate operation defined as midpoint)",
+  "spec_version": "3.0"
+}

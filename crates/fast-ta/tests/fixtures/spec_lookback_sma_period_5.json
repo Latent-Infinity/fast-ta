@@ -1,0 +1,12 @@
+{
+  "expected": {
+    "expected_lookback": 4,
+    "expected_min_len": 5
+  },
+  "input": [],
+  "params": {
+    "period": 5
+  },
+  "rationale": "PRD \u00a74.4: SMA lookback = period - 1",
+  "spec_version": "3.0"
+}

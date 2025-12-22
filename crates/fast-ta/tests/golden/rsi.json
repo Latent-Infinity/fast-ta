@@ -1,0 +1,31 @@
+{
+  "indicator": "RSI",
+  "description": "TA-Lib RSI reference values",
+  "parameters": {"period": 14},
+  "talib_version": "0.4.32",
+  "generated_at": "2025-01-01T00:00:00Z",
+  "notes": "RSI uses Wilder smoothing. All gains -> 100, all losses -> 0, no movement -> 50",
+  "test_cases": [
+    {
+      "name": "all_gains",
+      "input": [10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0],
+      "params": {"period": 3},
+      "expected": [null, null, null, 100.0, 100.0, 100.0, 100.0],
+      "notes": "All positive changes result in RSI = 100"
+    },
+    {
+      "name": "all_losses",
+      "input": [20.0, 19.0, 18.0, 17.0, 16.0, 15.0, 14.0],
+      "params": {"period": 3},
+      "expected": [null, null, null, 0.0, 0.0, 0.0, 0.0],
+      "notes": "All negative changes result in RSI = 0"
+    },
+    {
+      "name": "no_movement",
+      "input": [50.0, 50.0, 50.0, 50.0, 50.0, 50.0],
+      "params": {"period": 3},
+      "expected": [null, null, null, 50.0, 50.0, 50.0],
+      "notes": "No movement results in RSI = 50"
+    }
+  ]
+}
