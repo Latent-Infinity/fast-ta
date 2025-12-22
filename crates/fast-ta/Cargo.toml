@@ -1,0 +1,25 @@
+[package]
+name = "fast-ta"
+description = "High-performance technical analysis library for financial time series"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+keywords = ["technical-analysis", "trading", "finance", "indicators", "stocks"]
+categories = ["science", "algorithms", "mathematics"]
+
+[features]
+default = []
+serde = ["dep:serde"]
+
+[dependencies]
+num-traits = { workspace = true }
+thiserror = { workspace = true }
+serde = { workspace = true, optional = true }
+
+[dev-dependencies]
+rand = { workspace = true }
+rand_chacha = { workspace = true }
+proptest = { workspace = true }
