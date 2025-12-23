@@ -1,0 +1,17 @@
+{
+  "description": "VWAP cumulative calculation",
+  "input": {
+    "high": [10.0, 11.0, 12.0],
+    "low": [9.0, 10.0, 11.0],
+    "close": [9.5, 10.5, 11.5],
+    "volume": [100.0, 200.0, 100.0]
+  },
+  "expected": {
+    "typical_prices": [9.5, 10.5, 11.5],
+    "cumulative_tp_vol": [950.0, 3050.0, 4200.0],
+    "cumulative_vol": [100.0, 300.0, 400.0],
+    "vwap": [9.5, 10.166666666666666, 10.5]
+  },
+  "rationale": "VWAP = cumsum(TP * Vol) / cumsum(Vol), where TP = (H + L + C) / 3",
+  "spec_version": "3.0"
+}

@@ -4,13 +4,18 @@
 //! derived from the PRD specification. They are the authoritative source of truth.
 
 use fast_ta::indicators::{
+    adx::{adx, adx_lookback, adx_min_len},
     atr::{atr, atr_lookback, atr_min_len, true_range, true_range_lookback},
     bollinger::{bollinger, bollinger_lookback, bollinger_min_len},
+    donchian::{donchian, donchian_lookback, donchian_min_len},
     ema::{ema, ema_lookback, ema_min_len},
     macd::{macd, macd_line_lookback, macd_min_len, macd_signal_lookback},
+    obv::{obv, obv_lookback, obv_min_len},
     rsi::{rsi, rsi_lookback, rsi_min_len},
     sma::{sma, sma_lookback, sma_min_len},
     stochastic::{stochastic_d_lookback, stochastic_fast, stochastic_k_lookback, stochastic_min_len},
+    vwap::{vwap, vwap_lookback, vwap_min_len},
+    williams_r::{williams_r, williams_r_lookback, williams_r_min_len},
 };
 use fast_ta::kernels::rolling_extrema::{rolling_extrema_lookback, rolling_extrema_min_len};
 
@@ -720,4 +725,296 @@ fn output_length_contract_true_range() {
         n,
         "True Range output length should match input length"
     );
+}
+
+// ==================== ADX Tests ====================
+// Spec: spec_adx_directional_movement.json
+// PRD §4.6: ADX uses Wilder smoothing for trend strength
+
+#[test]
+fn spec_adx_lookback() {
+    // ADX lookback = 2 * period - 1
+    assert_eq!(adx_lookback(14), 27);
+    assert_eq!(adx_lookback(7), 13);
+    assert_eq!(adx_lookback(3), 5);
+    assert_eq!(adx_min_len(14), 28);
+    assert_eq!(adx_min_len(3), 6);
+}
+
+#[test]
+fn spec_adx_multi_output() {
+    let high = vec![10.0_f64, 12.0, 11.5, 13.0, 12.5, 14.0, 13.5, 15.0, 14.5, 16.0];
+    let low = vec![8.0, 9.0, 9.5, 10.0, 10.5, 11.0, 11.5, 12.0, 12.5, 13.0];
+    let close = vec![9.0, 11.0, 10.5, 12.0, 11.5, 13.0, 12.5, 14.0, 13.5, 15.0];
+
+    let result = adx(&high, &low, &close, 3).unwrap();
+
+    // All three outputs should have same length
+    assert_eq!(result.adx.len(), 10);
+    assert_eq!(result.plus_di.len(), 10);
+    assert_eq!(result.minus_di.len(), 10);
+
+    // ADX should be between 0 and 100
+    for i in 5..10 {
+        if !result.adx[i].is_nan() {
+            assert!(result.adx[i] >= 0.0 && result.adx[i] <= 100.0,
+                "ADX should be in [0, 100], got {} at index {}", result.adx[i], i);
+        }
+    }
+}
+
+#[test]
+fn spec_adx_lookback_consistency() {
+    let n = 30;
+    let high: Vec<f64> = (0..n).map(|x| 100.0 + x as f64 + 1.0).collect();
+    let low: Vec<f64> = (0..n).map(|x| 100.0 + x as f64 - 1.0).collect();
+    let close: Vec<f64> = (0..n).map(|x| 100.0 + x as f64).collect();
+    let period = 7;
+
+    let result = adx(&high, &low, &close, period).unwrap();
+    let nan_count = result.adx.iter().filter(|x| x.is_nan()).count();
+    assert_eq!(nan_count, adx_lookback(period));
+}
+
+// ==================== Williams %R Tests ====================
+// Spec: spec_williams_r_extremes.json
+// Williams %R range is [-100, 0]
+
+#[test]
+fn spec_williams_r_close_at_high_gives_0() {
+    let high = vec![10.0_f64, 12.0, 15.0];
+    let low = vec![8.0, 9.0, 10.0];
+    let close = vec![9.0, 11.0, 15.0]; // Close at highest high
+
+    let result = williams_r(&high, &low, &close, 3).unwrap();
+
+    // When close equals highest high, %R = 0
+    assert!(
+        approx_eq(result[2], 0.0, LOOSE_EPSILON),
+        "Close at high should give Williams %R = 0, got {}",
+        result[2]
+    );
+}
+
+#[test]
+fn spec_williams_r_close_at_low_gives_minus_100() {
+    let high = vec![15.0_f64, 14.0, 13.0];
+    let low = vec![10.0, 9.0, 8.0];
+    let close = vec![12.0, 10.0, 8.0]; // Close at lowest low
+
+    let result = williams_r(&high, &low, &close, 3).unwrap();
+
+    // When close equals lowest low, %R = -100
+    assert!(
+        approx_eq(result[2], -100.0, LOOSE_EPSILON),
+        "Close at low should give Williams %R = -100, got {}",
+        result[2]
+    );
+}
+
+#[test]
+fn spec_williams_r_lookback() {
+    assert_eq!(williams_r_lookback(14), 13);
+    assert_eq!(williams_r_lookback(5), 4);
+    assert_eq!(williams_r_lookback(1), 0);
+    assert_eq!(williams_r_min_len(14), 14);
+    assert_eq!(williams_r_min_len(5), 5);
+}
+
+#[test]
+fn spec_williams_r_lookback_consistency() {
+    let n = 30;
+    let high: Vec<f64> = (0..n).map(|x| 100.0 + x as f64 + 1.0).collect();
+    let low: Vec<f64> = (0..n).map(|x| 100.0 + x as f64 - 1.0).collect();
+    let close: Vec<f64> = (0..n).map(|x| 100.0 + x as f64).collect();
+    let period = 14;
+
+    let result = williams_r(&high, &low, &close, period).unwrap();
+    let nan_count = result.iter().filter(|x| x.is_nan()).count();
+    assert_eq!(nan_count, williams_r_lookback(period));
+}
+
+// ==================== Donchian Channel Tests ====================
+// Spec: spec_donchian_bands.json
+
+#[test]
+fn spec_donchian_bands_known_values() {
+    let high = vec![10.0_f64, 12.0, 11.0, 13.0, 12.0];
+    let low = vec![8.0, 10.0, 9.0, 11.0, 10.0];
+
+    let result = donchian(&high, &low, 3).unwrap();
+
+    // At index 2: window [0,1,2], upper = max(10,12,11) = 12, lower = min(8,10,9) = 8
+    assert!(approx_eq(result.upper[2], 12.0, EPSILON));
+    assert!(approx_eq(result.lower[2], 8.0, EPSILON));
+    assert!(approx_eq(result.middle[2], 10.0, EPSILON));
+
+    // At index 3: window [1,2,3], upper = max(12,11,13) = 13, lower = min(10,9,11) = 9
+    assert!(approx_eq(result.upper[3], 13.0, EPSILON));
+    assert!(approx_eq(result.lower[3], 9.0, EPSILON));
+    assert!(approx_eq(result.middle[3], 11.0, EPSILON));
+}
+
+#[test]
+fn spec_donchian_lookback() {
+    assert_eq!(donchian_lookback(20), 19);
+    assert_eq!(donchian_lookback(5), 4);
+    assert_eq!(donchian_lookback(1), 0);
+    assert_eq!(donchian_min_len(20), 20);
+    assert_eq!(donchian_min_len(5), 5);
+}
+
+#[test]
+fn spec_donchian_lookback_consistency() {
+    let n = 30;
+    let high: Vec<f64> = (0..n).map(|x| 100.0 + x as f64 + 1.0).collect();
+    let low: Vec<f64> = (0..n).map(|x| 100.0 + x as f64 - 1.0).collect();
+    let period = 20;
+
+    let result = donchian(&high, &low, period).unwrap();
+    let nan_count = result.upper.iter().filter(|x| x.is_nan()).count();
+    assert_eq!(nan_count, donchian_lookback(period));
+}
+
+#[test]
+fn output_length_contract_donchian() {
+    let n = 50;
+    let high: Vec<f64> = (0..n).map(|x| 100.0 + x as f64 + 1.0).collect();
+    let low: Vec<f64> = (0..n).map(|x| 100.0 + x as f64 - 1.0).collect();
+
+    let result = donchian(&high, &low, 20).unwrap();
+
+    assert_eq!(result.upper.len(), n);
+    assert_eq!(result.middle.len(), n);
+    assert_eq!(result.lower.len(), n);
+}
+
+// ==================== OBV Tests ====================
+// Spec: spec_obv_direction.json
+
+#[test]
+fn spec_obv_close_up_adds_volume() {
+    let close = vec![10.0_f64, 11.0];
+    let volume = vec![1000.0, 1500.0];
+
+    let result = obv(&close, &volume).unwrap();
+
+    assert!(approx_eq(result[0], 1000.0, EPSILON));
+    assert!(approx_eq(result[1], 2500.0, EPSILON)); // 1000 + 1500
+}
+
+#[test]
+fn spec_obv_close_down_subtracts_volume() {
+    let close = vec![11.0_f64, 10.0];
+    let volume = vec![1000.0, 1500.0];
+
+    let result = obv(&close, &volume).unwrap();
+
+    assert!(approx_eq(result[0], 1000.0, EPSILON));
+    assert!(approx_eq(result[1], -500.0, EPSILON)); // 1000 - 1500
+}
+
+#[test]
+fn spec_obv_close_unchanged_keeps_obv() {
+    let close = vec![10.0_f64, 10.0];
+    let volume = vec![1000.0, 1500.0];
+
+    let result = obv(&close, &volume).unwrap();
+
+    assert!(approx_eq(result[0], 1000.0, EPSILON));
+    assert!(approx_eq(result[1], 1000.0, EPSILON)); // Unchanged
+}
+
+#[test]
+fn spec_obv_lookback() {
+    assert_eq!(obv_lookback(), 0);
+    assert_eq!(obv_min_len(), 1);
+}
+
+#[test]
+fn output_length_contract_obv() {
+    let n = 50;
+    let close: Vec<f64> = (0..n).map(|x| 100.0 + x as f64).collect();
+    let volume: Vec<f64> = (0..n).map(|_| 1000.0).collect();
+
+    let result = obv(&close, &volume).unwrap();
+    assert_eq!(result.len(), n);
+
+    // No NaN values (lookback = 0)
+    assert_eq!(result.iter().filter(|x| x.is_nan()).count(), 0);
+}
+
+// ==================== VWAP Tests ====================
+// Spec: spec_vwap_cumulative.json
+
+#[test]
+fn spec_vwap_cumulative_calculation() {
+    let high = vec![10.0_f64, 11.0, 12.0];
+    let low = vec![9.0, 10.0, 11.0];
+    let close = vec![9.5, 10.5, 11.5];
+    let volume = vec![100.0, 200.0, 100.0];
+
+    let result = vwap(&high, &low, &close, &volume).unwrap();
+
+    // TP[0] = (10 + 9 + 9.5) / 3 = 9.5
+    // VWAP[0] = (9.5 * 100) / 100 = 9.5
+    assert!(approx_eq(result[0], 9.5, EPSILON));
+
+    // TP[1] = (11 + 10 + 10.5) / 3 = 10.5
+    // VWAP[1] = (9.5*100 + 10.5*200) / 300 = 3050 / 300 = 10.1667
+    let expected_vwap1 = (9.5 * 100.0 + 10.5 * 200.0) / 300.0;
+    assert!(approx_eq(result[1], expected_vwap1, LOOSE_EPSILON));
+
+    // TP[2] = (12 + 11 + 11.5) / 3 = 11.5
+    // VWAP[2] = (9.5*100 + 10.5*200 + 11.5*100) / 400 = 4200 / 400 = 10.5
+    let expected_vwap2 = (9.5 * 100.0 + 10.5 * 200.0 + 11.5 * 100.0) / 400.0;
+    assert!(approx_eq(result[2], expected_vwap2, LOOSE_EPSILON));
+}
+
+#[test]
+fn spec_vwap_lookback() {
+    assert_eq!(vwap_lookback(), 0);
+    assert_eq!(vwap_min_len(), 1);
+}
+
+#[test]
+fn output_length_contract_vwap() {
+    let n = 50;
+    let high: Vec<f64> = (0..n).map(|x| 100.0 + x as f64 + 1.0).collect();
+    let low: Vec<f64> = (0..n).map(|x| 100.0 + x as f64 - 1.0).collect();
+    let close: Vec<f64> = (0..n).map(|x| 100.0 + x as f64).collect();
+    let volume: Vec<f64> = (0..n).map(|_| 1000.0).collect();
+
+    let result = vwap(&high, &low, &close, &volume).unwrap();
+    assert_eq!(result.len(), n);
+
+    // No NaN values (lookback = 0)
+    assert_eq!(result.iter().filter(|x| x.is_nan()).count(), 0);
+}
+
+// ==================== New Indicators Output Length Contract ====================
+
+#[test]
+fn output_length_contract_adx() {
+    let n = 50;
+    let high: Vec<f64> = (0..n).map(|x| 100.0 + x as f64 + 1.0).collect();
+    let low: Vec<f64> = (0..n).map(|x| 100.0 + x as f64 - 1.0).collect();
+    let close: Vec<f64> = (0..n).map(|x| 100.0 + x as f64).collect();
+
+    let result = adx(&high, &low, &close, 14).unwrap();
+
+    assert_eq!(result.adx.len(), n);
+    assert_eq!(result.plus_di.len(), n);
+    assert_eq!(result.minus_di.len(), n);
+}
+
+#[test]
+fn output_length_contract_williams_r() {
+    let n = 50;
+    let high: Vec<f64> = (0..n).map(|x| 100.0 + x as f64 + 1.0).collect();
+    let low: Vec<f64> = (0..n).map(|x| 100.0 + x as f64 - 1.0).collect();
+    let close: Vec<f64> = (0..n).map(|x| 100.0 + x as f64).collect();
+
+    let result = williams_r(&high, &low, &close, 14).unwrap();
+    assert_eq!(result.len(), n);
 }

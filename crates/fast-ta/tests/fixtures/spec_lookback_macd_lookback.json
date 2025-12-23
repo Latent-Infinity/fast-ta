@@ -1,6 +1,7 @@
 {
   "expected": {
     "expected_macd_lookback": 25,
+    "expected_min_len": 34,
     "expected_signal_lookback": 33
   },
   "input": [],

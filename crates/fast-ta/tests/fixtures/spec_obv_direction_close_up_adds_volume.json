@@ -1,0 +1,13 @@
+{
+  "description": "OBV adds volume when close price increases",
+  "input": {
+    "close": [10.0, 11.0],
+    "volume": [1000.0, 1500.0]
+  },
+  "params": {},
+  "expected": {
+    "obv": [1000.0, 2500.0]
+  },
+  "rationale": "OBV[0] = volume[0], OBV[i] = OBV[i-1] + volume[i] when close[i] > close[i-1]",
+  "spec_version": "3.0"
+}

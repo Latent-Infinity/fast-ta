@@ -4,8 +4,8 @@
       null,
       null,
       0.0,
-      null,
-      null
+      14.285714285714286,
+      14.285714285714286
     ]
   },
   "input": {
@@ -35,6 +35,6 @@
     "d_period": 3,
     "k_period": 3
   },
-  "rationale": "PRD \u00a74.6: %K = 100 when close = highest high, %K = 0 when close = lowest low",
+  "rationale": "PRD §4.6: %K = 0 when close = lowest low (index 2: close=8, LL=8)",
   "spec_version": "3.0"
 }

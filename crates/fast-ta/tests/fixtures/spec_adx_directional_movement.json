@@ -1,0 +1,18 @@
+{
+  "description": "ADX directional movement calculation",
+  "input": {
+    "high": [10.0, 12.0, 11.5, 13.0, 12.5],
+    "low": [8.0, 9.0, 9.5, 10.0, 10.5],
+    "close": [9.0, 11.0, 10.5, 12.0, 11.5]
+  },
+  "params": {
+    "period": 3
+  },
+  "expected": {
+    "description": "+DM when current high exceeds previous high, -DM when previous low exceeds current low",
+    "lookback": 5,
+    "notes": "ADX lookback = 2 * period - 1 = 5 for period 3"
+  },
+  "rationale": "PRD §4.6: ADX uses Wilder smoothing for TR, +DM, -DM, then DX, then ADX",
+  "spec_version": "3.0"
+}

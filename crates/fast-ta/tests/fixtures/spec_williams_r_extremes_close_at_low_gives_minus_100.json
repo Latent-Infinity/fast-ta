@@ -1,0 +1,16 @@
+{
+  "description": "Williams %R equals -100 when close is at the lowest low",
+  "input": {
+    "high": [15.0, 14.0, 13.0],
+    "low": [10.0, 9.0, 8.0],
+    "close": [12.0, 10.0, 8.0]
+  },
+  "params": {
+    "period": 3
+  },
+  "expected": {
+    "williams_r_at_index_2": -100.0
+  },
+  "rationale": "Williams %R = (Highest High - Close) / (Highest High - Lowest Low) * -100; when Close = Lowest Low, result is -100",
+  "spec_version": "3.0"
+}

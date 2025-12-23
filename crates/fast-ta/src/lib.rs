@@ -71,6 +71,7 @@
 #![warn(clippy::useless_conversion)]
 #![allow(clippy::module_name_repetitions)]
 
+pub mod batch;
 pub mod error;
 pub mod indicators;
 pub mod kernels;

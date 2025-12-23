@@ -694,6 +694,133 @@ fn compute_variance<T: Float>(sum_sq: T, sum: T, period: T) -> T {
     }
 }
 
+// ==================== Configuration Type ====================
+
+/// Bollinger Bands configuration with fluent builder API.
+///
+/// Provides sensible defaults (period=20, std_dev=2.0) and fluent setters
+/// for customization. Implements `Default` for zero-config usage per
+/// Gravity Check 1.1.
+///
+/// # Example
+///
+/// ```
+/// use fast_ta::indicators::bollinger::Bollinger;
+///
+/// let prices = vec![
+///     44.0_f64, 44.5, 43.5, 44.5, 44.0, 43.0, 42.5, 43.5, 44.5, 45.0,
+///     45.5, 44.5, 43.5, 44.0, 45.0, 46.0, 46.5, 45.5, 44.5, 45.0,
+/// ];
+///
+/// // Use defaults (20, 2.0)
+/// let result = Bollinger::default().compute(&prices).unwrap();
+///
+/// // Or customize with fluent API
+/// let result = Bollinger::new()
+///     .period(10)
+///     .std_dev(2.5)
+///     .compute(&prices)
+///     .unwrap();
+/// ```
+#[derive(Debug, Clone, Copy)]
+pub struct Bollinger {
+    period: usize,
+    std_dev: f64,
+}
+
+impl Default for Bollinger {
+    /// Creates a Bollinger Bands configuration with standard parameters (20, 2.0).
+    fn default() -> Self {
+        Self {
+            period: 20,
+            std_dev: 2.0,
+        }
+    }
+}
+
+impl Bollinger {
+    /// Creates a new Bollinger Bands configuration with standard parameters (20, 2.0).
+    #[must_use]
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Sets the lookback period.
+    ///
+    /// Default: 20
+    #[must_use]
+    pub const fn period(mut self, period: usize) -> Self {
+        self.period = period;
+        self
+    }
+
+    /// Sets the standard deviation multiplier for the bands.
+    ///
+    /// Default: 2.0
+    #[must_use]
+    pub fn std_dev(mut self, std_dev: f64) -> Self {
+        self.std_dev = std_dev;
+        self
+    }
+
+    /// Computes Bollinger Bands using the configured parameters.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if:
+    /// - The input data is empty
+    /// - Period is 0
+    /// - Insufficient data for the configured period
+    pub fn compute<T: SeriesElement>(&self, data: &[T]) -> Result<BollingerOutput<T>> {
+        let std_dev = T::from_f64(self.std_dev)?;
+        bollinger(data, self.period, std_dev)
+    }
+
+    /// Computes Bollinger Bands into a pre-allocated output struct.
+    ///
+    /// Returns the number of valid values.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if:
+    /// - Output buffers are smaller than input length
+    /// - The input data is empty
+    /// - Period is 0
+    /// - Insufficient data for the configured period
+    pub fn compute_into<T: SeriesElement>(
+        &self,
+        data: &[T],
+        output: &mut BollingerOutput<T>,
+    ) -> Result<usize> {
+        let std_dev = T::from_f64(self.std_dev)?;
+        bollinger_into(data, self.period, std_dev, output)
+    }
+
+    /// Returns the period.
+    #[must_use]
+    pub const fn get_period(&self) -> usize {
+        self.period
+    }
+
+    /// Returns the standard deviation multiplier.
+    #[must_use]
+    pub const fn get_std_dev(&self) -> f64 {
+        self.std_dev
+    }
+
+    /// Returns the lookback for this configuration.
+    #[must_use]
+    pub const fn lookback(&self) -> usize {
+        bollinger_lookback(self.period)
+    }
+
+    /// Returns the minimum input length for this configuration.
+    #[must_use]
+    pub const fn min_len(&self) -> usize {
+        bollinger_min_len(self.period)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     #![allow(clippy::all, clippy::pedantic, clippy::nursery)]

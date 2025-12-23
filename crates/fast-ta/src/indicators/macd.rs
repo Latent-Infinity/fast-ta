@@ -53,7 +53,6 @@
 //! ```
 
 use crate::error::{Error, Result};
-use crate::indicators::ema::ema;
 use crate::traits::SeriesElement;
 
 /// Returns the lookback period for the MACD line.
@@ -206,6 +205,7 @@ impl<T: SeriesElement> MacdOutput<T> {
 ///
 /// - Time complexity: O(n) where n is the length of the input data
 /// - Space complexity: O(n) for each output vector (3n total)
+/// - Uses fused computation: 2 passes instead of 5 for better cache efficiency
 ///
 /// # Example
 ///
@@ -234,31 +234,21 @@ pub fn macd<T: SeriesElement>(
 
     let n = data.len();
 
-    // Step 1: Calculate fast and slow EMAs
-    let fast_ema = ema(data, fast_period)?;
-    let slow_ema = ema(data, slow_period)?;
-
-    // Step 2: Calculate MACD line = fast EMA - slow EMA
+    // Allocate output vectors
     let mut macd_line = vec![T::nan(); n];
-    for i in 0..n {
-        if !fast_ema[i].is_nan() && !slow_ema[i].is_nan() {
-            macd_line[i] = fast_ema[i] - slow_ema[i];
-        }
-    }
-
-    // Step 3: Calculate signal line = EMA of MACD line
-    // We need to compute EMA starting from the first valid MACD value
-    let first_valid_macd = slow_period - 1;
-    let signal_line = compute_signal_line(&macd_line, signal_period, first_valid_macd)?;
-
-    // Step 4: Calculate histogram = MACD line - signal line
-    let first_valid_signal = first_valid_macd + signal_period - 1;
+    let mut signal_line = vec![T::nan(); n];
     let mut histogram = vec![T::nan(); n];
-    for i in first_valid_signal..n {
-        if !macd_line[i].is_nan() && !signal_line[i].is_nan() {
-            histogram[i] = macd_line[i] - signal_line[i];
-        }
-    }
+
+    // Use fused computation for better performance
+    compute_macd_fused(
+        data,
+        fast_period,
+        slow_period,
+        signal_period,
+        &mut macd_line,
+        &mut signal_line,
+        &mut histogram,
+    )?;
 
     Ok(MacdOutput {
         macd_line,
@@ -350,45 +340,204 @@ pub fn macd_into<T: SeriesElement>(
         });
     }
 
-    // Step 1: Calculate fast and slow EMAs
-    let fast_ema = ema(data, fast_period)?;
-    let slow_ema = ema(data, slow_period)?;
+    // Use fused computation for better performance
+    compute_macd_fused(
+        data,
+        fast_period,
+        slow_period,
+        signal_period,
+        macd_output,
+        signal_output,
+        histogram_output,
+    )?;
 
-    // Step 2: Calculate MACD line and initialize outputs with NaN
+    // Valid counts
     let first_valid_macd = slow_period - 1;
-    for value in macd_output.iter_mut().take(first_valid_macd) {
+    let first_valid_signal = first_valid_macd + signal_period - 1;
+    let valid_macd = n - first_valid_macd;
+    let valid_signal = n - first_valid_signal;
+
+    Ok((valid_macd, valid_signal))
+}
+
+/// Fused MACD computation: computes fast/slow EMAs together and signal/histogram together.
+///
+/// This reduces the number of passes over the data from 5 to 2 for better cache efficiency.
+///
+/// Pass 1: Compute both fast and slow EMAs in a single loop, output MACD line
+/// Pass 2: Compute signal line and histogram in a single loop
+#[inline]
+fn compute_macd_fused<T: SeriesElement>(
+    data: &[T],
+    fast_period: usize,
+    slow_period: usize,
+    signal_period: usize,
+    macd_output: &mut [T],
+    signal_output: &mut [T],
+    histogram_output: &mut [T],
+) -> Result<()> {
+    let n = data.len();
+
+    // Compute alpha values for standard EMA: α = 2 / (period + 1)
+    let two = T::two();
+    let fast_alpha = two / T::from_usize(fast_period + 1)?;
+    let slow_alpha = two / T::from_usize(slow_period + 1)?;
+    let signal_alpha = two / T::from_usize(signal_period + 1)?;
+
+    let fast_one_minus_alpha = T::one() - fast_alpha;
+    let slow_one_minus_alpha = T::one() - slow_alpha;
+    let signal_one_minus_alpha = T::one() - signal_alpha;
+
+    let fast_period_t = T::from_usize(fast_period)?;
+    let slow_period_t = T::from_usize(slow_period)?;
+    let signal_period_t = T::from_usize(signal_period)?;
+
+    // =========================================================================
+    // PASS 1: Compute fast EMA, slow EMA, and MACD line in a single loop
+    // =========================================================================
+
+    // Initialize lookback period with NaN
+    let first_valid_slow = slow_period - 1;
+
+    // Compute SMA seeds for both EMAs
+    let mut fast_sum = T::zero();
+    let mut slow_sum = T::zero();
+    let mut fast_nan_count = 0usize;
+    let mut slow_nan_count = 0usize;
+
+    // Accumulate for fast EMA seed
+    for &value in data.iter().take(fast_period) {
+        if value.is_nan() {
+            fast_nan_count += 1;
+        } else {
+            fast_sum = fast_sum + value;
+        }
+    }
+
+    // Accumulate for slow EMA seed (includes fast_period values already summed)
+    for &value in data.iter().take(slow_period) {
+        if value.is_nan() {
+            slow_nan_count += 1;
+        } else {
+            slow_sum = slow_sum + value;
+        }
+    }
+
+    // Initialize EMA values
+    let mut fast_ema = if fast_nan_count == 0 {
+        fast_sum / fast_period_t
+    } else {
+        T::nan()
+    };
+
+    let mut slow_ema = if slow_nan_count == 0 {
+        slow_sum / slow_period_t
+    } else {
+        T::nan()
+    };
+
+    // Fill NaN for lookback period
+    for value in macd_output.iter_mut().take(first_valid_slow) {
         *value = T::nan();
     }
-    for i in first_valid_macd..n {
-        if !fast_ema[i].is_nan() && !slow_ema[i].is_nan() {
-            macd_output[i] = fast_ema[i] - slow_ema[i];
+
+    // Compute MACD values starting from first_valid_slow
+    // But we need to advance fast_ema to the right position first
+
+    // Advance fast EMA from first_valid_fast to first_valid_slow - 1
+    for i in fast_period..slow_period {
+        let value = data[i];
+        if fast_ema.is_nan() || value.is_nan() {
+            fast_ema = T::nan();
+        } else {
+            fast_ema = fast_alpha * value + fast_one_minus_alpha * fast_ema;
+        }
+    }
+
+    // Now at index first_valid_slow, both EMAs are valid
+    // Set first MACD value
+    if !fast_ema.is_nan() && !slow_ema.is_nan() {
+        macd_output[first_valid_slow] = fast_ema - slow_ema;
+    } else {
+        macd_output[first_valid_slow] = T::nan();
+    }
+
+    // Continue computing both EMAs and MACD line
+    for i in (first_valid_slow + 1)..n {
+        let value = data[i];
+
+        // Update fast EMA
+        if fast_ema.is_nan() || value.is_nan() {
+            fast_ema = T::nan();
+        } else {
+            fast_ema = fast_alpha * value + fast_one_minus_alpha * fast_ema;
+        }
+
+        // Update slow EMA
+        if slow_ema.is_nan() || value.is_nan() {
+            slow_ema = T::nan();
+        } else {
+            slow_ema = slow_alpha * value + slow_one_minus_alpha * slow_ema;
+        }
+
+        // Compute MACD line
+        if !fast_ema.is_nan() && !slow_ema.is_nan() {
+            macd_output[i] = fast_ema - slow_ema;
         } else {
             macd_output[i] = T::nan();
         }
     }
 
-    // Step 3: Calculate signal line
-    let signal_line = compute_signal_line(macd_output, signal_period, first_valid_macd)?;
-    let first_valid_signal = first_valid_macd + signal_period - 1;
-    signal_output[..n].copy_from_slice(&signal_line[..n]);
+    // =========================================================================
+    // PASS 2: Compute signal line and histogram in a single loop
+    // =========================================================================
 
-    // Step 4: Calculate histogram
+    let first_valid_signal = first_valid_slow + signal_period - 1;
+
+    // Fill NaN for signal and histogram lookback
+    for value in signal_output.iter_mut().take(first_valid_signal) {
+        *value = T::nan();
+    }
     for value in histogram_output.iter_mut().take(first_valid_signal) {
         *value = T::nan();
     }
-    for i in first_valid_signal..n {
-        if !macd_output[i].is_nan() && !signal_output[i].is_nan() {
-            histogram_output[i] = macd_output[i] - signal_output[i];
-        } else {
+
+    // Early return if not enough data for signal
+    if first_valid_signal >= n {
+        return Ok(());
+    }
+
+    // Compute SMA seed for signal line from first signal_period valid MACD values
+    let mut signal_sum = T::zero();
+    for &value in macd_output
+        .iter()
+        .skip(first_valid_slow)
+        .take(signal_period)
+    {
+        signal_sum = signal_sum + value;
+    }
+    let mut signal_ema = signal_sum / signal_period_t;
+
+    // Set first valid signal and histogram
+    signal_output[first_valid_signal] = signal_ema;
+    histogram_output[first_valid_signal] = macd_output[first_valid_signal] - signal_ema;
+
+    // Compute remaining signal and histogram values
+    for i in (first_valid_signal + 1)..n {
+        let macd_val = macd_output[i];
+
+        if signal_ema.is_nan() || macd_val.is_nan() {
+            signal_ema = T::nan();
+            signal_output[i] = T::nan();
             histogram_output[i] = T::nan();
+        } else {
+            signal_ema = signal_alpha * macd_val + signal_one_minus_alpha * signal_ema;
+            signal_output[i] = signal_ema;
+            histogram_output[i] = macd_val - signal_ema;
         }
     }
 
-    // Valid counts
-    let valid_macd = n - first_valid_macd;
-    let valid_signal = n - first_valid_signal;
-
-    Ok((valid_macd, valid_signal))
+    Ok(())
 }
 
 /// Validates MACD inputs.
@@ -445,58 +594,166 @@ fn validate_macd_inputs<T: SeriesElement>(
     Ok(())
 }
 
-/// Computes the signal line (EMA of MACD line) starting from the first valid MACD value.
-fn compute_signal_line<T: SeriesElement>(
-    macd_line: &[T],
+// ==================== Configuration Type ====================
+
+/// MACD configuration with fluent builder API.
+///
+/// Provides sensible defaults (12, 26, 9) and fluent setters for customization.
+/// Implements `Default` for zero-config usage per Gravity Check 1.1.
+///
+/// # Example
+///
+/// ```
+/// use fast_ta::indicators::macd::Macd;
+///
+/// let prices = vec![
+///     26.0_f64, 27.0, 28.0, 27.5, 28.5, 29.0, 28.0, 27.0, 28.0, 29.0,
+///     30.0, 29.5, 30.5, 31.0, 30.0, 31.0, 32.0, 31.5, 32.5, 33.0,
+///     32.0, 31.0, 32.0, 33.0, 34.0, 33.5, 34.5, 35.0, 34.0, 35.0,
+///     36.0, 35.5, 36.5, 37.0,
+/// ];
+///
+/// // Use defaults (12, 26, 9)
+/// let result = Macd::default().compute(&prices).unwrap();
+///
+/// // Or customize with fluent API
+/// let result = Macd::new()
+///     .fast_period(10)
+///     .slow_period(21)
+///     .signal_period(7)
+///     .compute(&prices)
+///     .unwrap();
+/// ```
+#[derive(Debug, Clone, Copy)]
+pub struct Macd {
+    fast_period: usize,
+    slow_period: usize,
     signal_period: usize,
-    first_valid_macd: usize,
-) -> Result<Vec<T>> {
-    let n = macd_line.len();
-    let mut signal_line = vec![T::nan(); n];
+}
 
-    // The signal line starts at first_valid_macd + signal_period - 1
-    let first_valid_signal = first_valid_macd + signal_period - 1;
-
-    // Not enough data for signal line
-    if first_valid_signal >= n {
-        return Ok(signal_line);
-    }
-
-    // Calculate alpha for standard EMA
-    let two = T::two();
-    let period_plus_one = T::from_usize(signal_period + 1)?;
-    let alpha = two / period_plus_one;
-    let one_minus_alpha = T::one() - alpha;
-
-    // Calculate initial SMA seed from the first signal_period valid MACD values
-    let period_t = T::from_usize(signal_period)?;
-    let mut sum = T::zero();
-    for &value in macd_line
-        .iter()
-        .skip(first_valid_macd)
-        .take(signal_period)
-    {
-        sum = sum + value;
-    }
-    let sma_seed = sum / period_t;
-
-    // Set the first valid signal value
-    signal_line[first_valid_signal] = sma_seed;
-
-    // Apply EMA formula for remaining values
-    let mut ema_prev = sma_seed;
-    for i in (first_valid_signal + 1)..n {
-        if macd_line[i].is_nan() {
-            signal_line[i] = T::nan();
-            // Keep ema_prev unchanged (or we could set it to NaN and propagate)
-        } else {
-            let ema_current = alpha * macd_line[i] + one_minus_alpha * ema_prev;
-            signal_line[i] = ema_current;
-            ema_prev = ema_current;
+impl Default for Macd {
+    /// Creates a MACD configuration with standard parameters (12, 26, 9).
+    fn default() -> Self {
+        Self {
+            fast_period: 12,
+            slow_period: 26,
+            signal_period: 9,
         }
     }
+}
 
-    Ok(signal_line)
+impl Macd {
+    /// Creates a new MACD configuration with standard parameters (12, 26, 9).
+    #[must_use]
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Sets the fast EMA period.
+    ///
+    /// Default: 12
+    #[must_use]
+    pub const fn fast_period(mut self, period: usize) -> Self {
+        self.fast_period = period;
+        self
+    }
+
+    /// Sets the slow EMA period.
+    ///
+    /// Default: 26
+    #[must_use]
+    pub const fn slow_period(mut self, period: usize) -> Self {
+        self.slow_period = period;
+        self
+    }
+
+    /// Sets the signal line EMA period.
+    ///
+    /// Default: 9
+    #[must_use]
+    pub const fn signal_period(mut self, period: usize) -> Self {
+        self.signal_period = period;
+        self
+    }
+
+    /// Computes MACD using the configured parameters.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if:
+    /// - The input data is empty
+    /// - `fast_period >= slow_period`
+    /// - Any period is 0
+    /// - Insufficient data for the configured periods
+    pub fn compute<T: SeriesElement>(&self, data: &[T]) -> Result<MacdOutput<T>> {
+        macd(data, self.fast_period, self.slow_period, self.signal_period)
+    }
+
+    /// Computes MACD into pre-allocated buffers.
+    ///
+    /// Returns `(macd_valid_count, signal_valid_count)`.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if:
+    /// - Any buffer is smaller than input length
+    /// - The input data is empty
+    /// - `fast_period >= slow_period`
+    /// - Any period is 0
+    /// - Insufficient data for the configured periods
+    pub fn compute_into<T: SeriesElement>(
+        &self,
+        data: &[T],
+        macd_output: &mut [T],
+        signal_output: &mut [T],
+        histogram_output: &mut [T],
+    ) -> Result<(usize, usize)> {
+        macd_into(
+            data,
+            self.fast_period,
+            self.slow_period,
+            self.signal_period,
+            macd_output,
+            signal_output,
+            histogram_output,
+        )
+    }
+
+    /// Returns the fast period.
+    #[must_use]
+    pub const fn get_fast_period(&self) -> usize {
+        self.fast_period
+    }
+
+    /// Returns the slow period.
+    #[must_use]
+    pub const fn get_slow_period(&self) -> usize {
+        self.slow_period
+    }
+
+    /// Returns the signal period.
+    #[must_use]
+    pub const fn get_signal_period(&self) -> usize {
+        self.signal_period
+    }
+
+    /// Returns the MACD line lookback for this configuration.
+    #[must_use]
+    pub const fn line_lookback(&self) -> usize {
+        macd_line_lookback(self.slow_period)
+    }
+
+    /// Returns the signal line lookback for this configuration.
+    #[must_use]
+    pub const fn signal_lookback(&self) -> usize {
+        macd_signal_lookback(self.slow_period, self.signal_period)
+    }
+
+    /// Returns the minimum input length for this configuration.
+    #[must_use]
+    pub const fn min_len(&self) -> usize {
+        macd_min_len(self.slow_period, self.signal_period)
+    }
 }
 
 #[cfg(test)]

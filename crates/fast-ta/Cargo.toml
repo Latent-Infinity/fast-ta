@@ -13,6 +13,8 @@ categories = ["science", "algorithms", "mathematics"]
 [features]
 default = []
 serde = ["dep:serde"]
+# Parallel batch processing using Rayon
+parallel = ["dep:rayon"]
 # Debug feature: treat TA-Lib reference divergences as test failures instead of warnings
 reference-checks-strict = []
 
@@ -20,6 +22,7 @@ reference-checks-strict = []
 num-traits = { workspace = true }
 thiserror = { workspace = true }
 serde = { workspace = true, optional = true }
+rayon = { workspace = true, optional = true }
 
 [dev-dependencies]
 rand = { workspace = true }
@@ -27,3 +30,13 @@ rand_chacha = { workspace = true }
 proptest = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
+criterion = { workspace = true }
+ta-lib-sys = "0.1"
+
+[[bench]]
+name = "indicators"
+harness = false
+
+[[bench]]
+name = "talib_comparison"
+harness = false

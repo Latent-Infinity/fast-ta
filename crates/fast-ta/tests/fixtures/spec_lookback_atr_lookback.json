@@ -1,11 +1,12 @@
 {
   "expected": {
-    "expected_lookback": 14
+    "expected_lookback": 14,
+    "expected_min_len": 15
   },
   "input": [],
   "params": {
     "period": 14
   },
-  "rationale": "PRD \u00a74.5: Output shape is trimmed, first lookback values are NaN",
+  "rationale": "PRD §4.4: ATR lookback = period",
   "spec_version": "3.0"
 }

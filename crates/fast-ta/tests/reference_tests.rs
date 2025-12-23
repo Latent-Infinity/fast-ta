@@ -138,6 +138,12 @@ fn reference_golden_files() {
         }
 
         let file_name = path.file_name().and_then(|s| s.to_str()).unwrap_or("");
+
+        // Skip metadata and *_reference.json files (they have test_cases format, not direct input/params/expected)
+        if file_name == "metadata.json" || file_name.ends_with("_reference.json") {
+            continue;
+        }
+
         let indicator = if let Some((prefix, _)) = file_name.split_once('_') {
             prefix
         } else {

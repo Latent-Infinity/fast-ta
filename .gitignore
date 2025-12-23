@@ -157,3 +157,6 @@ target/criterion/
 
 # auto claude
 .auto-claude/
+
+# Git worktrees
+.worktrees/

@@ -5,13 +5,23 @@
 //! 0 and 100, where readings above 80 typically indicate overbought conditions
 //! and readings below 20 indicate oversold conditions.
 //!
-//! # Variants
+//! # Canonical API
 //!
-//! This module provides three variants of the Stochastic Oscillator:
+//! The primary API is [`stochastic()`] with configurable `k_slowing` parameter:
 //!
-//! - **Fast Stochastic**: Raw %K and its SMA (%D)
-//! - **Slow Stochastic**: Smoothed %K (SMA of Fast %K) and its SMA (%D)
-//! - **Full Stochastic**: Configurable smoothing for both %K and %D
+//! - **Fast Stochastic**: `k_slowing = 1` (default) - no smoothing on %K
+//! - **Slow Stochastic**: `k_slowing = 3` (traditional) - %K smoothed before %D
+//!
+//! For typical use cases, prefer the canonical [`stochastic()`] function or the
+//! [`Stochastic`] configuration type.
+//!
+//! # Convenience Functions
+//!
+//! For explicit variant selection, these functions are also available:
+//!
+//! - [`stochastic_fast`]: Fast Stochastic (equivalent to `k_slowing = 1`)
+//! - [`stochastic_slow`]: Slow Stochastic (equivalent to `k_slowing = 3`)
+//! - [`stochastic_full`]: Full Stochastic with explicit `slow_k_period` parameter
 //!
 //! # Algorithm
 //!
@@ -23,8 +33,8 @@
 //! %D = SMA(%K, d_period)
 //! ```
 //!
-//! For the Slow and Full variants, an additional smoothing is applied to %K
-//! before computing %D.
+//! For Slow/Full variants, an additional smoothing is applied to %K before
+//! computing %D.
 //!
 //! # Mathematical Conventions (PRD §4.5, §4.8)
 //!
@@ -40,26 +50,126 @@
 //! # Example
 //!
 //! ```
-//! use fast_ta::indicators::stochastic::{stochastic_fast, StochasticOutput};
+//! use fast_ta::indicators::stochastic::{stochastic, StochasticOutput};
 //!
 //! let high = vec![10.0_f64, 11.0, 12.0, 11.5, 12.5, 13.0, 12.0, 11.0, 10.5, 11.5];
 //! let low = vec![9.0_f64, 10.0, 11.0, 10.5, 11.5, 12.0, 11.0, 10.0, 9.5, 10.5];
 //! let close = vec![9.5_f64, 10.5, 11.5, 11.0, 12.0, 12.5, 11.5, 10.5, 10.0, 11.0];
 //!
-//! let result = stochastic_fast(&high, &low, &close, 5, 3).unwrap();
+//! // Fast stochastic (k_slowing = 1)
+//! let fast = stochastic(&high, &low, &close, 5, 3, 1).unwrap();
+//!
+//! // Slow stochastic (k_slowing = 3)
+//! let slow = stochastic(&high, &low, &close, 5, 3, 3).unwrap();
 //!
 //! // First 4 values (k_period - 1) of %K are NaN
-//! assert!(result.k[0].is_nan());
-//! assert!(result.k[3].is_nan());
-//! assert!(!result.k[4].is_nan());
-//!
-//! // First 6 values (k_period + d_period - 2) of %D are NaN
-//! assert!(result.d[5].is_nan());
-//! assert!(!result.d[6].is_nan());
+//! assert!(fast.k[0].is_nan());
+//! assert!(fast.k[3].is_nan());
+//! assert!(!fast.k[4].is_nan());
 //! ```
 
 use crate::error::{Error, Result};
 use crate::traits::SeriesElement;
+
+/// Computes the Stochastic Oscillator with configurable %K slowing.
+///
+/// This is the canonical stochastic function per PRD §4.6. The `k_slowing` parameter
+/// controls the smoothing applied to %K before computing %D:
+///
+/// - **Fast Stochastic**: `k_slowing = 1` (default). %K = raw stochastic, no smoothing.
+/// - **Slow Stochastic**: `k_slowing > 1`. %K is smoothed with SMA(k_slowing) before %D.
+///
+/// # Arguments
+///
+/// * `high` - The high prices
+/// * `low` - The low prices
+/// * `close` - The closing prices
+/// * `k_period` - The lookback period for raw %K (commonly 14)
+/// * `d_period` - The smoothing period for %D (commonly 3)
+/// * `k_slowing` - The smoothing period for %K (1 = fast, 3 = traditional slow)
+///
+/// # Returns
+///
+/// A `Result` containing a [`StochasticOutput`] with %K and %D lines.
+///
+/// # Errors
+///
+/// Returns an error if:
+/// - Any input is empty (`Error::EmptyInput`)
+/// - Any period is zero (`Error::InvalidPeriod`)
+/// - Input lengths don't match
+/// - Input data is shorter than required
+///
+/// # Example
+///
+/// ```
+/// use fast_ta::indicators::stochastic::stochastic;
+///
+/// let high = vec![44.0_f64, 44.5, 44.75, 44.25, 44.5, 44.75, 45.0, 44.5, 44.0, 44.25, 44.5];
+/// let low = vec![43.5_f64, 44.0, 44.25, 43.75, 44.0, 44.25, 44.5, 44.0, 43.5, 43.75, 44.0];
+/// let close = vec![43.75_f64, 44.25, 44.5, 44.0, 44.25, 44.5, 44.75, 44.25, 43.75, 44.0, 44.25];
+///
+/// // Fast stochastic (k_slowing = 1)
+/// let fast = stochastic(&high, &low, &close, 5, 3, 1).unwrap();
+///
+/// // Slow stochastic (k_slowing = 3)
+/// let slow = stochastic(&high, &low, &close, 5, 3, 3).unwrap();
+/// ```
+#[must_use = "this returns a Result with Stochastic values, which should be used"]
+pub fn stochastic<T: SeriesElement>(
+    high: &[T],
+    low: &[T],
+    close: &[T],
+    k_period: usize,
+    d_period: usize,
+    k_slowing: usize,
+) -> Result<StochasticOutput<T>> {
+    if k_slowing == 1 {
+        // Fast stochastic: no smoothing on %K
+        stochastic_fast(high, low, close, k_period, d_period)
+    } else {
+        // Slow/Full stochastic: smooth %K before computing %D
+        stochastic_full(high, low, close, k_period, k_slowing, d_period)
+    }
+}
+
+/// Computes the Stochastic Oscillator into pre-allocated output buffers.
+///
+/// This is the `_into` variant of [`stochastic`] for buffer reuse.
+///
+/// # Arguments
+///
+/// * `high` - The high prices
+/// * `low` - The low prices
+/// * `close` - The closing prices
+/// * `k_period` - The lookback period for raw %K (commonly 14)
+/// * `d_period` - The smoothing period for %D (commonly 3)
+/// * `k_slowing` - The smoothing period for %K (1 = fast, 3 = traditional slow)
+/// * `output` - Pre-allocated output buffers
+///
+/// # Returns
+///
+/// A tuple `(valid_k_count, valid_d_count)` indicating non-NaN values.
+///
+/// # Errors
+///
+/// Returns an error if validation fails or output buffers are too small.
+#[must_use = "this returns a Result with valid counts, which should be used"]
+pub fn stochastic_into<T: SeriesElement>(
+    high: &[T],
+    low: &[T],
+    close: &[T],
+    k_period: usize,
+    d_period: usize,
+    k_slowing: usize,
+    output: &mut StochasticOutput<T>,
+) -> Result<(usize, usize)> {
+    if k_slowing == 1 {
+        stochastic_fast_into(high, low, close, k_period, d_period, output)
+    } else {
+        stochastic_full_into(high, low, close, k_period, k_slowing, d_period, output)
+    }
+}
 
 /// Returns the lookback period for the Stochastic %K line.
 ///
@@ -627,8 +737,9 @@ fn validate_stochastic_full_inputs<T: SeriesElement>(
 ///
 /// %K = 100 * (Close - Lowest Low) / (Highest High - Lowest Low)
 ///
-/// This uses a simple O(n*k) approach for now. A more efficient O(n)
-/// monotonic deque approach could be used for large `k_period` values.
+/// Uses a fused O(n×k) approach computing both highest high and lowest low in
+/// a single pass through each window. This is more efficient than two separate
+/// passes through rolling_max and rolling_min.
 fn compute_raw_k<T: SeriesElement>(
     high: &[T],
     low: &[T],
@@ -748,6 +859,211 @@ fn compute_sma_of_series<T: SeriesElement>(
     }
 
     Ok(())
+}
+
+// ==================== Configuration Type ====================
+
+/// Stochastic Oscillator configuration with fluent builder API.
+///
+/// Provides sensible defaults (k_period=14, d_period=3, k_slowing=1) and fluent
+/// setters for customization. Implements `Default` for zero-config usage per
+/// Gravity Check 1.1.
+///
+/// Per PRD §5.2, the default is **fast stochastic** (`k_slowing = 1`).
+/// Use `k_slowing(3)` for traditional slow stochastic.
+///
+/// # Example
+///
+/// ```
+/// use fast_ta::indicators::stochastic::Stochastic;
+///
+/// let high = vec![
+///     45.0_f64, 45.5, 44.5, 45.5, 45.0, 44.0, 43.5, 44.5, 45.5, 46.0,
+///     46.5, 45.5, 44.5, 45.0, 46.0,
+/// ];
+/// let low = vec![
+///     43.0, 43.5, 42.5, 43.5, 43.0, 42.0, 41.5, 42.5, 43.5, 44.0,
+///     44.5, 43.5, 42.5, 43.0, 44.0,
+/// ];
+/// let close = vec![
+///     44.0, 44.5, 43.5, 44.5, 44.0, 43.0, 42.5, 43.5, 44.5, 45.0,
+///     45.5, 44.5, 43.5, 44.0, 45.0,
+/// ];
+///
+/// // Use defaults (14, 3, 1) - computes fast stochastic
+/// let result = Stochastic::default().compute(&high, &low, &close).unwrap();
+///
+/// // Slow stochastic with fluent API
+/// let result = Stochastic::new()
+///     .k_period(5)
+///     .d_period(3)
+///     .k_slowing(3)
+///     .compute(&high, &low, &close)
+///     .unwrap();
+///
+/// // Use convenience constructors for fast/slow variants
+/// let fast_result = Stochastic::fast(14, 3).compute(&high, &low, &close).unwrap();
+/// let slow_result = Stochastic::slow(14, 3).compute(&high, &low, &close).unwrap();
+/// ```
+#[derive(Debug, Clone, Copy)]
+pub struct Stochastic {
+    k_period: usize,
+    d_period: usize,
+    k_slowing: usize,
+}
+
+impl Default for Stochastic {
+    /// Creates a Stochastic configuration with fast stochastic defaults (14, 3, 1).
+    ///
+    /// Per PRD §5.2, the default is fast stochastic (`k_slowing = 1`).
+    fn default() -> Self {
+        Self {
+            k_period: 14,
+            d_period: 3,
+            k_slowing: 1,
+        }
+    }
+}
+
+impl Stochastic {
+    /// Creates a new Stochastic configuration with fast stochastic defaults (14, 3, 1).
+    #[must_use]
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Creates a fast stochastic configuration.
+    ///
+    /// Fast stochastic has `k_slowing = 1` (no smoothing on %K).
+    #[must_use]
+    pub const fn fast(k_period: usize, d_period: usize) -> Self {
+        Self {
+            k_period,
+            d_period,
+            k_slowing: 1,
+        }
+    }
+
+    /// Creates a slow stochastic configuration.
+    ///
+    /// Slow stochastic has `k_slowing = 3` (3-period smoothing on %K).
+    #[must_use]
+    pub const fn slow(k_period: usize, d_period: usize) -> Self {
+        Self {
+            k_period,
+            d_period,
+            k_slowing: 3,
+        }
+    }
+
+    /// Sets the %K lookback period.
+    ///
+    /// Default: 14
+    #[must_use]
+    pub const fn k_period(mut self, period: usize) -> Self {
+        self.k_period = period;
+        self
+    }
+
+    /// Sets the %D (signal line) smoothing period.
+    ///
+    /// Default: 3
+    #[must_use]
+    pub const fn d_period(mut self, period: usize) -> Self {
+        self.d_period = period;
+        self
+    }
+
+    /// Sets the %K slowing (smoothing) period.
+    ///
+    /// - `k_slowing = 1`: Fast stochastic (no smoothing, default)
+    /// - `k_slowing = 3`: Slow stochastic (traditional)
+    ///
+    /// Default: 1 (fast stochastic per PRD §5.2)
+    #[must_use]
+    pub const fn k_slowing(mut self, period: usize) -> Self {
+        self.k_slowing = period;
+        self
+    }
+
+    /// Computes the Stochastic Oscillator using the configured parameters.
+    ///
+    /// Uses the canonical `stochastic()` function with the configured `k_slowing`.
+    /// For `k_slowing = 1` (default), this computes fast stochastic.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if:
+    /// - Any input array is empty
+    /// - Input arrays have different lengths
+    /// - Any period is 0
+    /// - Insufficient data for the configured periods
+    pub fn compute<T: SeriesElement>(
+        &self,
+        high: &[T],
+        low: &[T],
+        close: &[T],
+    ) -> Result<StochasticOutput<T>> {
+        stochastic(high, low, close, self.k_period, self.d_period, self.k_slowing)
+    }
+
+    /// Computes the Stochastic Oscillator into a pre-allocated output struct.
+    ///
+    /// Returns `(k_valid_count, d_valid_count)`.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if:
+    /// - Output buffers are smaller than input length
+    /// - Any input array is empty
+    /// - Input arrays have different lengths
+    /// - Any period is 0
+    /// - Insufficient data for the configured periods
+    pub fn compute_into<T: SeriesElement>(
+        &self,
+        high: &[T],
+        low: &[T],
+        close: &[T],
+        output: &mut StochasticOutput<T>,
+    ) -> Result<(usize, usize)> {
+        stochastic_into(high, low, close, self.k_period, self.d_period, self.k_slowing, output)
+    }
+
+    /// Returns the %K period.
+    #[must_use]
+    pub const fn get_k_period(&self) -> usize {
+        self.k_period
+    }
+
+    /// Returns the %D period.
+    #[must_use]
+    pub const fn get_d_period(&self) -> usize {
+        self.d_period
+    }
+
+    /// Returns the %K slowing (smoothing) period.
+    #[must_use]
+    pub const fn get_k_slowing(&self) -> usize {
+        self.k_slowing
+    }
+
+    /// Returns the %K lookback for this configuration.
+    #[must_use]
+    pub const fn k_lookback(&self) -> usize {
+        stochastic_k_lookback(self.k_period)
+    }
+
+    /// Returns the %D lookback for this configuration.
+    #[must_use]
+    pub const fn d_lookback(&self) -> usize {
+        stochastic_d_lookback(self.k_period, self.d_period)
+    }
+
+    /// Returns the minimum input length for this configuration.
+    #[must_use]
+    pub const fn min_len(&self) -> usize {
+        stochastic_min_len(self.k_period, self.d_period)
+    }
 }
 
 #[cfg(test)]

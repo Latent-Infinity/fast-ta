@@ -9,7 +9,6 @@ use fast_ta::indicators::{
     ema::ema,
     macd::macd,
     rsi::rsi,
-    sma::sma,
     stochastic::stochastic_fast,
 };
 use serde::Deserialize;
@@ -39,8 +38,11 @@ fn fixtures_dir() -> PathBuf {
 struct SpecFixture {
     spec_version: String,
     rationale: String,
+    #[serde(default)]
     input: Value,
+    #[serde(default)]
     params: Value,
+    #[serde(default)]
     expected: Value,
 }
 
@@ -584,6 +586,131 @@ fn json_spec_fixtures() {
                     "{file_name}"
                 );
             }
+            continue;
+        }
+
+        // Donchian Channels fixture - validates rolling high/low bands
+        if file_name.starts_with("spec_donchian_bands") {
+            use fast_ta::indicators::donchian::{donchian, donchian_lookback, donchian_min_len};
+            let input = fixture.input.as_object().expect("Expected input object");
+            let high = parse_vec_f64(input.get("high").expect("Missing high"));
+            let low = parse_vec_f64(input.get("low").expect("Missing low"));
+            let period = fixture
+                .params
+                .get("period")
+                .and_then(Value::as_u64)
+                .expect("Missing period") as usize;
+
+            let result = donchian(&high, &low, period).expect("Donchian failed");
+
+            // Check specific indices from expected
+            let expected_obj = fixture.expected.as_object().expect("Expected object");
+            for (key, val) in expected_obj.iter() {
+                if key.starts_with("at_index_") {
+                    let idx: usize = key.strip_prefix("at_index_").unwrap().parse().unwrap();
+                    let expected_vals = val.as_object().unwrap();
+                    let exp_upper = expected_vals.get("upper").and_then(Value::as_f64).unwrap();
+                    let exp_lower = expected_vals.get("lower").and_then(Value::as_f64).unwrap();
+                    let exp_middle = expected_vals.get("middle").and_then(Value::as_f64).unwrap();
+
+                    assert!(
+                        approx_eq(result.upper[idx], exp_upper, EPSILON),
+                        "{file_name}: upper[{idx}] expected {exp_upper}, got {}",
+                        result.upper[idx]
+                    );
+                    assert!(
+                        approx_eq(result.lower[idx], exp_lower, EPSILON),
+                        "{file_name}: lower[{idx}] expected {exp_lower}, got {}",
+                        result.lower[idx]
+                    );
+                    assert!(
+                        approx_eq(result.middle[idx], exp_middle, EPSILON),
+                        "{file_name}: middle[{idx}] expected {exp_middle}, got {}",
+                        result.middle[idx]
+                    );
+                }
+            }
+
+            // Verify lookback
+            assert_eq!(donchian_lookback(period), period - 1, "{file_name}: lookback");
+            assert_eq!(donchian_min_len(period), period, "{file_name}: min_len");
+            continue;
+        }
+
+        // Williams %R extremes - validate boundary conditions
+        if file_name.starts_with("spec_williams_r_extremes_") {
+            use fast_ta::indicators::williams_r::williams_r;
+            let input = fixture.input.as_object().expect("Expected input object");
+            let high = parse_vec_f64(input.get("high").expect("Missing high"));
+            let low = parse_vec_f64(input.get("low").expect("Missing low"));
+            let close = parse_vec_f64(input.get("close").expect("Missing close"));
+            let period = fixture
+                .params
+                .get("period")
+                .and_then(Value::as_u64)
+                .expect("Missing period") as usize;
+
+            let result = williams_r(&high, &low, &close, period).expect("Williams %R failed");
+
+            // Check expected value at specific index
+            if let Some(exp_val) = fixture.expected.get("williams_r_at_index_2") {
+                let expected = exp_val.as_f64().expect("Expected f64");
+                assert!(
+                    approx_eq(result[2], expected, EPSILON),
+                    "{file_name}: williams_r[2] expected {expected}, got {}",
+                    result[2]
+                );
+            }
+            continue;
+        }
+
+        // OBV direction - validate volume flow calculation
+        if file_name.starts_with("spec_obv_direction_") {
+            use fast_ta::indicators::obv::obv;
+            let input = fixture.input.as_object().expect("Expected input object");
+            let close = parse_vec_f64(input.get("close").expect("Missing close"));
+            let volume = parse_vec_f64(input.get("volume").expect("Missing volume"));
+
+            let result = obv(&close, &volume).expect("OBV failed");
+            let expected_obv = parse_vec_f64(fixture.expected.get("obv").expect("Missing obv"));
+
+            for (i, (actual, expected)) in result.iter().zip(expected_obv.iter()).enumerate() {
+                assert!(
+                    approx_eq(*actual, *expected, EPSILON),
+                    "{file_name}: obv[{i}] expected {expected}, got {actual}"
+                );
+            }
+            continue;
+        }
+
+        // VWAP cumulative - validate cumulative calculation
+        if file_name.starts_with("spec_vwap_") {
+            use fast_ta::indicators::vwap::{vwap, vwap_lookback, vwap_min_len};
+            let input = fixture.input.as_object().expect("Expected input object");
+            let high = parse_vec_f64(input.get("high").expect("Missing high"));
+            let low = parse_vec_f64(input.get("low").expect("Missing low"));
+            let close = parse_vec_f64(input.get("close").expect("Missing close"));
+            let volume = parse_vec_f64(input.get("volume").expect("Missing volume"));
+
+            let result = vwap(&high, &low, &close, &volume).expect("VWAP failed");
+            let expected_vwap = parse_vec_f64(fixture.expected.get("vwap").expect("Missing vwap"));
+
+            for (i, (actual, expected)) in result.iter().zip(expected_vwap.iter()).enumerate() {
+                assert!(
+                    approx_eq(*actual, *expected, LOOSE_EPSILON),
+                    "{file_name}: vwap[{i}] expected {expected}, got {actual}"
+                );
+            }
+
+            // Verify lookback
+            assert_eq!(vwap_lookback(), 0, "{file_name}: lookback");
+            assert_eq!(vwap_min_len(), 1, "{file_name}: min_len");
+            continue;
+        }
+
+        // ADX directional movement - uses test_cases format, skip in json_fixture_tests
+        // (covered by spec_fixture_tests.rs)
+        if file_name.starts_with("spec_adx_") {
             continue;
         }
 

@@ -47,6 +47,7 @@ use std::collections::VecDeque;
 use crate::error::{Error, Result};
 use crate::traits::SeriesElement;
 
+
 /// Returns the lookback period for rolling max/min.
 ///
 /// The lookback is the number of NaN values at the start of the output.
