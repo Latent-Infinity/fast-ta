@@ -5,6 +5,12 @@
 //! - Population standard deviation (÷n) for Bollinger Bands
 //! - EMA smoothing factors: α = 2/(period+1) for standard, α = 1/period for Wilder
 
+#![allow(clippy::needless_range_loop)]
+#![allow(clippy::cast_precision_loss)]
+#![allow(clippy::similar_names)]
+#![allow(clippy::unreadable_literal)]
+#![allow(clippy::float_cmp)]
+
 use fast_ta::indicators::{
     bollinger::{bollinger, rolling_stddev},
     ema::{ema, ema_wilder, wilder_to_standard_period},
@@ -52,8 +58,7 @@ fn math_convention_population_stddev_basic() {
     );
     assert!(
         !approx_eq(result[4], sample_stddev, EPSILON),
-        "Should NOT match sample stddev {}",
-        sample_stddev
+        "Should NOT match sample stddev {sample_stddev}"
     );
 }
 
@@ -203,7 +208,7 @@ fn math_convention_wilder_standard_equivalence() {
 
     // Verify equivalence with actual calculations
     // For longer data, the EMA values should converge
-    let data: Vec<f64> = (0..100).map(|x| x as f64).collect();
+    let data: Vec<f64> = (0..100).map(f64::from).collect();
     let wilder_14 = ema_wilder(&data, 14).unwrap();
     let standard_27 = ema(&data, 27).unwrap();
 
@@ -213,9 +218,7 @@ fn math_convention_wilder_standard_equivalence() {
         let diff = (wilder_14[i] - standard_27[i]).abs();
         assert!(
             diff < 1.0,
-            "Wilder(14) and Standard(27) should converge, diff at {} is {}",
-            i,
-            diff
+            "Wilder(14) and Standard(27) should converge, diff at {i} is {diff}"
         );
     }
 }
@@ -232,8 +235,7 @@ fn math_convention_ema_sma_seed() {
     let expected_sma_3 = (10.0 + 20.0 + 30.0) / 3.0;
     assert!(
         approx_eq(result_3[2], expected_sma_3, EPSILON),
-        "EMA(3) seed should be SMA = {}",
-        expected_sma_3
+        "EMA(3) seed should be SMA = {expected_sma_3}"
     );
 
     // Period 5: SMA seed = (10+20+30+40+50)/5 = 30.0
@@ -241,8 +243,7 @@ fn math_convention_ema_sma_seed() {
     let expected_sma_5 = (10.0 + 20.0 + 30.0 + 40.0 + 50.0) / 5.0;
     assert!(
         approx_eq(result_5[4], expected_sma_5, EPSILON),
-        "EMA(5) seed should be SMA = {}",
-        expected_sma_5
+        "EMA(5) seed should be SMA = {expected_sma_5}"
     );
 }
 
@@ -255,8 +256,7 @@ fn math_convention_ema_wilder_sma_seed() {
     let expected_sma = (10.0 + 20.0 + 30.0 + 40.0) / 4.0;
     assert!(
         approx_eq(result[3], expected_sma, EPSILON),
-        "Wilder EMA(4) seed should be SMA = {}",
-        expected_sma
+        "Wilder EMA(4) seed should be SMA = {expected_sma}"
     );
 }
 
@@ -291,19 +291,15 @@ fn math_convention_rsi_uses_wilder_smoothing() {
     // Create data with known gains and losses
     // [100, 102, 101, 103, 102, 104, 103, 105]
     // Changes: [+2, -1, +2, -1, +2, -1, +2]
-    let data = vec![
-        100.0_f64, 102.0, 101.0, 103.0, 102.0, 104.0, 103.0, 105.0,
-    ];
+    let data = vec![100.0_f64, 102.0, 101.0, 103.0, 102.0, 104.0, 103.0, 105.0];
     let result = rsi(&data, 3).unwrap();
 
     // All RSI values should be in [0, 100]
     for (i, &val) in result.iter().enumerate() {
         if !val.is_nan() {
             assert!(
-                val >= 0.0 && val <= 100.0,
-                "RSI at {} = {} should be in [0, 100]",
-                i,
-                val
+                (0.0..=100.0).contains(&val),
+                "RSI at {i} = {val} should be in [0, 100]"
             );
         }
     }

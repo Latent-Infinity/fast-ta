@@ -50,7 +50,7 @@ pub struct BatchProcessor {
 impl BatchProcessor {
     /// Creates a new batch processor with default settings.
     #[must_use]
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         Self {
             min_parallel_threshold: 1000,
         }
@@ -108,7 +108,11 @@ impl BatchProcessor {
     {
         if series.len() < self.min_parallel_threshold {
             // Sequential fallback for small batches
-            series.iter().map(|s| indicator_fn(s)).collect()
+            let mut results = Vec::with_capacity(series.len());
+            for s in series {
+                results.push(indicator_fn(s)?);
+            }
+            Ok(results)
         } else {
             // Parallel processing
             series
@@ -119,18 +123,30 @@ impl BatchProcessor {
     }
 
     /// Sequential version when parallel feature is disabled.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if any indicator computation fails.
     #[cfg(not(feature = "parallel"))]
     pub fn process<T, F, R>(&self, series: &[Vec<T>], indicator_fn: F) -> Result<Vec<R>>
     where
         T: SeriesElement,
         F: Fn(&[T]) -> Result<R>,
     {
-        series.iter().map(|s| indicator_fn(s)).collect()
+        let mut results = Vec::with_capacity(series.len());
+        for s in series {
+            results.push(indicator_fn(s)?);
+        }
+        Ok(results)
     }
 
     /// Processes multiple time series in parallel with references to slices.
     ///
     /// Similar to [`process`](Self::process), but accepts slices instead of owned vectors.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if any indicator computation fails.
     #[cfg(feature = "parallel")]
     pub fn process_refs<T, F, R>(&self, series: &[&[T]], indicator_fn: F) -> Result<Vec<R>>
     where
@@ -139,7 +155,11 @@ impl BatchProcessor {
         R: Send,
     {
         if series.len() < self.min_parallel_threshold {
-            series.iter().map(|s| indicator_fn(s)).collect()
+            let mut results = Vec::with_capacity(series.len());
+            for s in series {
+                results.push(indicator_fn(s)?);
+            }
+            Ok(results)
         } else {
             series
                 .par_iter()
@@ -149,13 +169,21 @@ impl BatchProcessor {
     }
 
     /// Sequential version when parallel feature is disabled.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if any indicator computation fails.
     #[cfg(not(feature = "parallel"))]
     pub fn process_refs<T, F, R>(&self, series: &[&[T]], indicator_fn: F) -> Result<Vec<R>>
     where
         T: SeriesElement,
         F: Fn(&[T]) -> Result<R>,
     {
-        series.iter().map(|s| indicator_fn(s)).collect()
+        let mut results = Vec::with_capacity(series.len());
+        for s in series {
+            results.push(indicator_fn(s)?);
+        }
+        Ok(results)
     }
 }
 
@@ -176,6 +204,10 @@ impl BatchProcessor {
 ///
 /// let results = process_batch(&series, |s| sma(s, 3)).unwrap();
 /// ```
+///
+/// # Errors
+///
+/// Returns an error if any indicator computation fails.
 #[cfg(feature = "parallel")]
 pub fn process_batch<T, F, R>(series: &[Vec<T>], indicator_fn: F) -> Result<Vec<R>>
 where
@@ -187,6 +219,10 @@ where
 }
 
 /// Sequential version when parallel feature is disabled.
+///
+/// # Errors
+///
+/// Returns an error if any indicator computation fails.
 #[cfg(not(feature = "parallel"))]
 pub fn process_batch<T, F, R>(series: &[Vec<T>], indicator_fn: F) -> Result<Vec<R>>
 where
@@ -214,6 +250,10 @@ where
 ///
 /// let results = process_ohlc_batch(&datasets, |h, l, c| atr(h, l, c, 2)).unwrap();
 /// ```
+///
+/// # Errors
+///
+/// Returns an error if any indicator computation fails.
 #[cfg(feature = "parallel")]
 pub fn process_ohlc_batch<T, F, R>(
     datasets: &[(Vec<T>, Vec<T>, Vec<T>)],
@@ -226,10 +266,11 @@ where
 {
     if datasets.len() < 4 {
         // Sequential for small batches
-        datasets
-            .iter()
-            .map(|(h, l, c)| indicator_fn(h, l, c))
-            .collect()
+        let mut results = Vec::with_capacity(datasets.len());
+        for (h, l, c) in datasets {
+            results.push(indicator_fn(h, l, c)?);
+        }
+        Ok(results)
     } else {
         datasets
             .par_iter()
@@ -239,6 +280,10 @@ where
 }
 
 /// Sequential version when parallel feature is disabled.
+///
+/// # Errors
+///
+/// Returns an error if any indicator computation fails.
 #[cfg(not(feature = "parallel"))]
 pub fn process_ohlc_batch<T, F, R>(
     datasets: &[(Vec<T>, Vec<T>, Vec<T>)],
@@ -248,10 +293,11 @@ where
     T: SeriesElement,
     F: Fn(&[T], &[T], &[T]) -> Result<R>,
 {
-    datasets
-        .iter()
-        .map(|(h, l, c)| indicator_fn(h, l, c))
-        .collect()
+    let mut results = Vec::with_capacity(datasets.len());
+    for (h, l, c) in datasets {
+        results.push(indicator_fn(h, l, c)?);
+    }
+    Ok(results)
 }
 
 #[cfg(test)]

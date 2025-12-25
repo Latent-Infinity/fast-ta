@@ -439,8 +439,8 @@ mod tests {
 
         assert!(approx_eq(result[2], -3.0, EPSILON)); // (-5-3-1)/3
         assert!(approx_eq(result[3], -1.0, EPSILON)); // (-3-1+1)/3
-        assert!(approx_eq(result[4], 1.0, EPSILON));  // (-1+1+3)/3
-        assert!(approx_eq(result[5], 3.0, EPSILON));  // (1+3+5)/3
+        assert!(approx_eq(result[4], 1.0, EPSILON)); // (-1+1+3)/3
+        assert!(approx_eq(result[5], 3.0, EPSILON)); // (1+3+5)/3
     }
 
     #[test]
@@ -672,7 +672,10 @@ mod tests {
 
         for i in 2..data.len() {
             if !result[i].is_nan() {
-                let window_min = data[i - 2..=i].iter().cloned().fold(f64::INFINITY, f64::min);
+                let window_min = data[i - 2..=i]
+                    .iter()
+                    .cloned()
+                    .fold(f64::INFINITY, f64::min);
                 let window_max = data[i - 2..=i]
                     .iter()
                     .cloned()

@@ -60,7 +60,8 @@ fn test_end_to_end_csv_to_sma_to_csv_output() {
         "sma",
         input.to_str().unwrap(),
         "3",
-        "-o", output.to_str().unwrap()
+        "-o",
+        output.to_str().unwrap(),
     ]);
 
     assert!(output_result.status.success(), "CLI should succeed");
@@ -70,8 +71,14 @@ fn test_end_to_end_csv_to_sma_to_csv_output() {
     let lines: Vec<&str> = content.lines().collect();
 
     // Header + data rows (minus lookback of 2)
-    assert!(lines.len() >= 2, "Should have header and at least one data row");
-    assert!(lines[0].contains("sma"), "Header should contain indicator name");
+    assert!(
+        lines.len() >= 2,
+        "Should have header and at least one data row"
+    );
+    assert!(
+        lines[0].contains("sma"),
+        "Header should contain indicator name"
+    );
 
     fs::remove_file(&output).ok();
 }
@@ -87,7 +94,8 @@ fn test_end_to_end_csv_to_macd_to_csv_output() {
         "macd",
         input.to_str().unwrap(),
         "2,3,2",
-        "-o", output.to_str().unwrap()
+        "-o",
+        output.to_str().unwrap(),
     ]);
 
     // Note: MACD may have insufficient data for small test files
@@ -99,7 +107,9 @@ fn test_end_to_end_csv_to_macd_to_csv_output() {
         // MACD should have multi-column output
         if !lines.is_empty() {
             assert!(
-                lines[0].contains("macd") || lines[0].contains("signal") || lines[0].contains("histogram"),
+                lines[0].contains("macd")
+                    || lines[0].contains("signal")
+                    || lines[0].contains("histogram"),
                 "Header should contain MACD column names"
             );
         }
@@ -121,7 +131,10 @@ fn test_exit_code_success() {
 fn test_exit_code_missing_file() {
     let output = run_cli(&["sma", "/nonexistent/file.csv", "3"]);
 
-    assert!(!output.status.success(), "Exit code should be non-zero for missing file");
+    assert!(
+        !output.status.success(),
+        "Exit code should be non-zero for missing file"
+    );
 
     // Per PRD §5.4: exit code 2 for data error
     let code = output.status.code().unwrap_or(-1);
@@ -170,7 +183,11 @@ fn test_lookback_rows_dropped_per_prd() {
     // The fixture has 10 data points. With period 3, lookback is 2.
     // We expect header + 8 data rows = 9 lines total.
     // This verifies lookback rows are dropped (not 11 lines with all NaN rows).
-    assert_eq!(lines.len(), 9, "Expected 9 lines (header + 8 data rows after dropping 2 lookback)");
+    assert_eq!(
+        lines.len(),
+        9,
+        "Expected 9 lines (header + 8 data rows after dropping 2 lookback)"
+    );
     assert!(lines[0].contains("sma"), "First line should be header");
 }
 
@@ -184,7 +201,8 @@ fn test_date_column_preserved() {
         "sma",
         input.to_str().unwrap(),
         "2",
-        "-o", output.to_str().unwrap()
+        "-o",
+        output.to_str().unwrap(),
     ]);
 
     if output_result.status.success() && output.exists() {
@@ -302,7 +320,8 @@ fn test_output_to_file() {
         "sma",
         input.to_str().unwrap(),
         "2",
-        "-o", output_path.to_str().unwrap()
+        "-o",
+        output_path.to_str().unwrap(),
     ]);
 
     // Output file should be created

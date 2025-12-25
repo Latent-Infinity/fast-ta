@@ -9,6 +9,17 @@ repository.workspace = true
 authors.workspace = true
 keywords = ["technical-analysis", "trading", "finance", "indicators", "stocks"]
 categories = ["science", "algorithms", "mathematics"]
+readme = "../../README.md"
+
+# Include only essential files in published crate (excludes tests and fixtures)
+include = [
+    "src/**/*",
+    "examples/**/*",
+    "benches/**/*",
+    "Cargo.toml",
+    "../../LICENSE",
+    "../../README.md",
+]
 
 [features]
 default = []
@@ -17,12 +28,15 @@ serde = ["dep:serde"]
 parallel = ["dep:rayon"]
 # Debug feature: treat TA-Lib reference divergences as test failures instead of warnings
 reference-checks-strict = []
+# Enable dhat allocation profiling tests (run separately: cargo test --features dhat-heap)
+dhat-heap = ["dep:dhat"]
 
 [dependencies]
 num-traits = { workspace = true }
 thiserror = { workspace = true }
 serde = { workspace = true, optional = true }
 rayon = { workspace = true, optional = true }
+dhat = { version = "0.3", optional = true }
 
 [dev-dependencies]
 rand = { workspace = true }
@@ -39,4 +53,8 @@ harness = false
 
 [[bench]]
 name = "talib_comparison"
+harness = false
+
+[[bench]]
+name = "workload"
 harness = false

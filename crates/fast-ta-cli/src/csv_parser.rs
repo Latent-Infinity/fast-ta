@@ -72,6 +72,7 @@ pub struct ParsedCsv {
 
 impl ParsedCsv {
     /// Get a column by normalized name (e.g., "close", "high").
+    #[must_use] 
     pub fn get_column(&self, name: &str) -> Option<&Vec<f64>> {
         self.column_map
             .get(name)
@@ -79,6 +80,7 @@ impl ParsedCsv {
     }
 
     /// Get close prices, trying multiple common column names.
+    #[must_use] 
     pub fn get_close(&self) -> Option<&Vec<f64>> {
         self.get_column("close")
             .or_else(|| self.get_column("price"))
@@ -203,7 +205,7 @@ pub fn parse_csv_from_reader<R: Read>(reader: R) -> Result<ParsedCsv> {
         }
 
         // Extract numeric columns
-        for (&col_idx, values) in columns.iter_mut() {
+        for (&col_idx, values) in &mut columns {
             let value = record.get(col_idx).unwrap_or("");
             let parsed = parse_value(value).map_err(|e| {
                 if let CliError::CsvParseError { message, .. } = e {
@@ -224,11 +226,7 @@ pub fn parse_csv_from_reader<R: Read>(reader: R) -> Result<ParsedCsv> {
     Ok(ParsedCsv {
         headers,
         column_map,
-        dates: if dates.is_empty() {
-            None
-        } else {
-            Some(dates)
-        },
+        dates: if dates.is_empty() { None } else { Some(dates) },
         columns,
         row_count,
     })
@@ -239,43 +237,51 @@ pub fn parse_csv_from_reader<R: Read>(reader: R) -> Result<ParsedCsv> {
 /// This is a convenience function for indicators that only need close prices.
 pub fn parse_close_prices<P: AsRef<Path>>(path: P) -> Result<Vec<f64>> {
     let parsed = parse_csv(path)?;
-    parsed.get_close().cloned().ok_or_else(|| CliError::CsvParseError {
-        message: "no close price column found (expected 'close', 'price', or 'adj close')".to_string(),
-        line: None,
-    })
+    parsed
+        .get_close()
+        .cloned()
+        .ok_or_else(|| CliError::CsvParseError {
+            message: "no close price column found (expected 'close', 'price', or 'adj close')"
+                .to_string(),
+            line: None,
+        })
 }
 
 /// Parse a CSV file into OHLC data.
 pub fn parse_ohlc<P: AsRef<Path>>(path: P) -> Result<OhlcData> {
     let parsed = parse_csv(path)?;
 
-    let open = parsed.get_column("open").cloned().ok_or_else(|| {
-        CliError::CsvParseError {
+    let open = parsed
+        .get_column("open")
+        .cloned()
+        .ok_or_else(|| CliError::CsvParseError {
             message: "no 'open' column found".to_string(),
             line: None,
-        }
-    })?;
+        })?;
 
-    let high = parsed.get_column("high").cloned().ok_or_else(|| {
-        CliError::CsvParseError {
+    let high = parsed
+        .get_column("high")
+        .cloned()
+        .ok_or_else(|| CliError::CsvParseError {
             message: "no 'high' column found".to_string(),
             line: None,
-        }
-    })?;
+        })?;
 
-    let low = parsed.get_column("low").cloned().ok_or_else(|| {
-        CliError::CsvParseError {
+    let low = parsed
+        .get_column("low")
+        .cloned()
+        .ok_or_else(|| CliError::CsvParseError {
             message: "no 'low' column found".to_string(),
             line: None,
-        }
-    })?;
+        })?;
 
-    let close = parsed.get_close().cloned().ok_or_else(|| {
-        CliError::CsvParseError {
+    let close = parsed
+        .get_close()
+        .cloned()
+        .ok_or_else(|| CliError::CsvParseError {
             message: "no close price column found".to_string(),
             line: None,
-        }
-    })?;
+        })?;
 
     Ok(OhlcData {
         dates: parsed.dates,
@@ -290,33 +296,37 @@ pub fn parse_ohlc<P: AsRef<Path>>(path: P) -> Result<OhlcData> {
 pub fn parse_ohlcv<P: AsRef<Path>>(path: P) -> Result<OhlcvData> {
     let parsed = parse_csv(path)?;
 
-    let open = parsed.get_column("open").cloned().ok_or_else(|| {
-        CliError::CsvParseError {
+    let open = parsed
+        .get_column("open")
+        .cloned()
+        .ok_or_else(|| CliError::CsvParseError {
             message: "no 'open' column found".to_string(),
             line: None,
-        }
-    })?;
+        })?;
 
-    let high = parsed.get_column("high").cloned().ok_or_else(|| {
-        CliError::CsvParseError {
+    let high = parsed
+        .get_column("high")
+        .cloned()
+        .ok_or_else(|| CliError::CsvParseError {
             message: "no 'high' column found".to_string(),
             line: None,
-        }
-    })?;
+        })?;
 
-    let low = parsed.get_column("low").cloned().ok_or_else(|| {
-        CliError::CsvParseError {
+    let low = parsed
+        .get_column("low")
+        .cloned()
+        .ok_or_else(|| CliError::CsvParseError {
             message: "no 'low' column found".to_string(),
             line: None,
-        }
-    })?;
+        })?;
 
-    let close = parsed.get_close().cloned().ok_or_else(|| {
-        CliError::CsvParseError {
+    let close = parsed
+        .get_close()
+        .cloned()
+        .ok_or_else(|| CliError::CsvParseError {
             message: "no close price column found".to_string(),
             line: None,
-        }
-    })?;
+        })?;
 
     let volume = parsed
         .get_column("volume")
@@ -577,13 +587,12 @@ mod tests {
     #[test]
     fn test_various_date_column_names() {
         for date_name in &["date", "Date", "DATE", "time", "datetime", "timestamp"] {
-            let csv_data = format!("{},close\n2024-01-01,44.0\n", date_name);
+            let csv_data = format!("{date_name},close\n2024-01-01,44.0\n");
             let cursor = Cursor::new(csv_data);
             let parsed = parse_csv_from_reader(cursor).unwrap();
             assert!(
                 parsed.dates.is_some(),
-                "Failed to detect date column: {}",
-                date_name
+                "Failed to detect date column: {date_name}"
             );
         }
     }

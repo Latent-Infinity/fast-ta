@@ -49,7 +49,10 @@ impl fmt::Display for CliError {
             CliError::IoError { source, path } => {
                 if let Some(p) = path {
                     write!(f, "I/O error with file '{p}': {source}. ")?;
-                    write!(f, "Check that the file exists and you have read permissions.")
+                    write!(
+                        f,
+                        "Check that the file exists and you have read permissions."
+                    )
                 } else {
                     write!(f, "I/O error: {source}")
                 }
@@ -60,7 +63,10 @@ impl fmt::Display for CliError {
                 } else {
                     write!(f, "CSV parse error: {message}. ")?;
                 }
-                write!(f, "Ensure your CSV has valid format with numeric data columns.")
+                write!(
+                    f,
+                    "Ensure your CSV has valid format with numeric data columns."
+                )
             }
             CliError::IndicatorError { source } => {
                 write!(f, "Indicator computation error: {source}")
@@ -267,7 +273,7 @@ mod tests {
 
     #[test]
     fn test_display_io_error_without_path() {
-        let io_err = io::Error::new(io::ErrorKind::Other, "network error");
+        let io_err = io::Error::other("network error");
         let err = CliError::IoError {
             source: io_err,
             path: None,
@@ -367,13 +373,12 @@ mod tests {
     #[test]
     fn test_from_csv_error() {
         // Create a CSV error by parsing invalid CSV
-        let result: std::result::Result<csv::StringRecord, csv::Error> =
-            csv::ReaderBuilder::new()
-                .has_headers(false)
-                .from_reader("a,b\n1,\"unterminated".as_bytes())
-                .records()
-                .last()
-                .unwrap();
+        let result: std::result::Result<csv::StringRecord, csv::Error> = csv::ReaderBuilder::new()
+            .has_headers(false)
+            .from_reader("a,b\n1,\"unterminated".as_bytes())
+            .records()
+            .last()
+            .unwrap();
 
         if let Err(csv_err) = result {
             let cli_err: CliError = csv_err.into();

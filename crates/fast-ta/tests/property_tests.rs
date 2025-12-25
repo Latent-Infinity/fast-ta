@@ -3,6 +3,12 @@
 //! These tests verify invariant properties that must hold for all valid inputs,
 //! using randomly generated test data to find edge cases.
 
+#![allow(clippy::needless_range_loop)]
+#![allow(clippy::cast_precision_loss)]
+#![allow(clippy::similar_names)]
+#![allow(clippy::unreadable_literal)]
+#![allow(clippy::float_cmp)]
+
 use proptest::prelude::*;
 
 use fast_ta::indicators::{
@@ -140,7 +146,7 @@ proptest! {
     /// RSI output length equals input length
     #[test]
     fn prop_rsi_output_length(data in arb_price_series(5, 100), period in 1usize..=10) {
-        if data.len() >= period + 1 {
+        if data.len() > period {
             let result = rsi(&data, period).unwrap();
             prop_assert_eq!(result.len(), data.len());
         }
@@ -149,13 +155,13 @@ proptest! {
     /// RSI values are in range [0, 100]
     #[test]
     fn prop_rsi_bounded(data in arb_price_series(5, 100), period in 1usize..=10) {
-        if data.len() >= period + 1 {
+        if data.len() > period {
             let result = rsi(&data, period).unwrap();
 
             for (i, &val) in result.iter().enumerate() {
                 if !val.is_nan() {
                     prop_assert!(
-                        val >= 0.0 && val <= 100.0,
+                        (0.0..=100.0).contains(&val),
                         "RSI at index {} is out of bounds: {}", i, val
                     );
                 }
@@ -166,7 +172,7 @@ proptest! {
     /// RSI of strictly increasing prices equals 100
     #[test]
     fn prop_rsi_all_gains(start in 1.0..100.0_f64, step in 0.1..5.0_f64, len in 5usize..20, period in 1usize..=5) {
-        if len >= period + 1 {
+        if len > period {
             let data: Vec<f64> = (0..len).map(|i| start + step * (i as f64)).collect();
             let result = rsi(&data, period).unwrap();
 
@@ -182,9 +188,9 @@ proptest! {
     /// RSI of strictly decreasing prices equals 0
     #[test]
     fn prop_rsi_all_losses(start in 100.0..200.0_f64, step in 0.1..5.0_f64, len in 5usize..20, period in 1usize..=5) {
-        if len >= period + 1 {
+        if len > period {
             let data: Vec<f64> = (0..len).map(|i| start - step * (i as f64)).filter(|&x| x > 0.0).collect();
-            if data.len() >= period + 1 {
+            if data.len() > period {
                 let result = rsi(&data, period).unwrap();
 
                 for i in period..data.len() {
@@ -298,7 +304,7 @@ proptest! {
     /// ATR is always non-negative
     #[test]
     fn prop_atr_non_negative((high, low, close) in arb_ohlc_series(20, 100), period in 1usize..=14) {
-        if high.len() >= period + 1 {
+        if high.len() > period {
             let result = atr(&high, &low, &close, period).unwrap();
 
             for (i, &val) in result.iter().enumerate() {
@@ -345,7 +351,7 @@ proptest! {
             for (i, &val) in result.k.iter().enumerate() {
                 if !val.is_nan() {
                     prop_assert!(
-                        val >= 0.0 && val <= 100.0,
+                        (0.0..=100.0).contains(&val),
                         "%K at index {} is out of bounds: {}", i, val
                     );
                 }
@@ -365,7 +371,7 @@ proptest! {
             for (i, &val) in result.d.iter().enumerate() {
                 if !val.is_nan() {
                     prop_assert!(
-                        val >= 0.0 && val <= 100.0,
+                        (0.0..=100.0).contains(&val),
                         "%D at index {} is out of bounds: {}", i, val
                     );
                 }

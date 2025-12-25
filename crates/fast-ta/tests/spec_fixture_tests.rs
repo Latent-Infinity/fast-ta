@@ -3,6 +3,15 @@
 //! These tests verify indicator behavior against hand-constructed test fixtures
 //! derived from the PRD specification. They are the authoritative source of truth.
 
+#![allow(clippy::needless_range_loop)]
+#![allow(clippy::cast_precision_loss)]
+#![allow(clippy::similar_names)]
+#![allow(clippy::unreadable_literal)]
+#![allow(clippy::float_cmp)]
+#![allow(clippy::too_many_lines)]
+#![allow(clippy::cast_possible_truncation)]
+#![allow(clippy::missing_panics_doc)]
+
 use fast_ta::indicators::{
     adx::{adx, adx_lookback, adx_min_len},
     atr::{atr, atr_lookback, atr_min_len, true_range, true_range_lookback},
@@ -13,7 +22,9 @@ use fast_ta::indicators::{
     obv::{obv, obv_lookback, obv_min_len},
     rsi::{rsi, rsi_lookback, rsi_min_len},
     sma::{sma, sma_lookback, sma_min_len},
-    stochastic::{stochastic_d_lookback, stochastic_fast, stochastic_k_lookback, stochastic_min_len},
+    stochastic::{
+        stochastic_d_lookback, stochastic_fast, stochastic_k_lookback, stochastic_min_len,
+    },
     vwap::{vwap, vwap_lookback, vwap_min_len},
     williams_r::{williams_r, williams_r_lookback, williams_r_min_len},
 };
@@ -235,10 +246,7 @@ fn spec_bollinger_symmetric_bands() {
             let lower_diff = result.middle[i] - result.lower[i];
             assert!(
                 approx_eq(upper_diff, lower_diff, EPSILON),
-                "Bands should be symmetric at index {}: upper_diff={}, lower_diff={}",
-                i,
-                upper_diff,
-                lower_diff
+                "Bands should be symmetric at index {i}: upper_diff={upper_diff}, lower_diff={lower_diff}"
             );
         }
     }
@@ -286,7 +294,7 @@ fn spec_stochastic_close_at_low_k0() {
 
 #[test]
 fn spec_lookback_sma() {
-    let input: Vec<f64> = (0..20).map(|x| x as f64).collect();
+    let input: Vec<f64> = (0..20).map(f64::from).collect();
     let period = 5;
     let result = sma(&input, period).unwrap();
 
@@ -295,14 +303,13 @@ fn spec_lookback_sma() {
     let nan_count = result.iter().filter(|x| x.is_nan()).count();
     assert_eq!(
         nan_count, expected_lookback,
-        "SMA should have {} NaN values, got {}",
-        expected_lookback, nan_count
+        "SMA should have {expected_lookback} NaN values, got {nan_count}"
     );
 }
 
 #[test]
 fn spec_lookback_ema() {
-    let input: Vec<f64> = (0..20).map(|x| x as f64).collect();
+    let input: Vec<f64> = (0..20).map(f64::from).collect();
     let period = 5;
     let result = ema(&input, period).unwrap();
 
@@ -311,14 +318,13 @@ fn spec_lookback_ema() {
     let nan_count = result.iter().filter(|x| x.is_nan()).count();
     assert_eq!(
         nan_count, expected_lookback,
-        "EMA should have {} NaN values, got {}",
-        expected_lookback, nan_count
+        "EMA should have {expected_lookback} NaN values, got {nan_count}"
     );
 }
 
 #[test]
 fn spec_lookback_rsi() {
-    let input: Vec<f64> = (0..30).map(|x| x as f64).collect();
+    let input: Vec<f64> = (0..30).map(f64::from).collect();
     let period = 14;
     let result = rsi(&input, period).unwrap();
 
@@ -327,38 +333,35 @@ fn spec_lookback_rsi() {
     let nan_count = result.iter().filter(|x| x.is_nan()).count();
     assert_eq!(
         nan_count, expected_lookback,
-        "RSI should have {} NaN values, got {}",
-        expected_lookback, nan_count
+        "RSI should have {expected_lookback} NaN values, got {nan_count}"
     );
 }
 
 #[test]
 fn spec_lookback_macd() {
-    let input: Vec<f64> = (0..50).map(|x| x as f64).collect();
+    let input: Vec<f64> = (0..50).map(f64::from).collect();
     let result = macd(&input, 12, 26, 9).unwrap();
 
     // MACD line lookback = slow_period - 1 = 25
     let macd_nan_count = result.macd_line.iter().filter(|x| x.is_nan()).count();
     assert_eq!(
         macd_nan_count, 25,
-        "MACD line should have 25 NaN values, got {}",
-        macd_nan_count
+        "MACD line should have 25 NaN values, got {macd_nan_count}"
     );
 
     // Signal line lookback = slow_period + signal_period - 2 = 33
     let signal_nan_count = result.signal_line.iter().filter(|x| x.is_nan()).count();
     assert_eq!(
         signal_nan_count, 33,
-        "Signal line should have 33 NaN values, got {}",
-        signal_nan_count
+        "Signal line should have 33 NaN values, got {signal_nan_count}"
     );
 }
 
 #[test]
 fn spec_lookback_atr() {
-    let high: Vec<f64> = (0..30).map(|x| 100.0 + x as f64).collect();
-    let low: Vec<f64> = (0..30).map(|x| 98.0 + x as f64).collect();
-    let close: Vec<f64> = (0..30).map(|x| 99.0 + x as f64).collect();
+    let high: Vec<f64> = (0..30).map(|x| 100.0 + f64::from(x)).collect();
+    let low: Vec<f64> = (0..30).map(|x| 98.0 + f64::from(x)).collect();
+    let close: Vec<f64> = (0..30).map(|x| 99.0 + f64::from(x)).collect();
     let period = 14;
     let result = atr(&high, &low, &close, period).unwrap();
 
@@ -367,14 +370,13 @@ fn spec_lookback_atr() {
     let nan_count = result.iter().filter(|x| x.is_nan()).count();
     assert_eq!(
         nan_count, expected_lookback,
-        "ATR should have {} NaN values, got {}",
-        expected_lookback, nan_count
+        "ATR should have {expected_lookback} NaN values, got {nan_count}"
     );
 }
 
 #[test]
 fn spec_lookback_bollinger() {
-    let input: Vec<f64> = (0..30).map(|x| x as f64).collect();
+    let input: Vec<f64> = (0..30).map(f64::from).collect();
     let period = 20;
     let result = bollinger(&input, period, 2.0).unwrap();
 
@@ -383,17 +385,16 @@ fn spec_lookback_bollinger() {
     let nan_count = result.middle.iter().filter(|x| x.is_nan()).count();
     assert_eq!(
         nan_count, expected_lookback,
-        "Bollinger should have {} NaN values, got {}",
-        expected_lookback, nan_count
+        "Bollinger should have {expected_lookback} NaN values, got {nan_count}"
     );
 }
 
 #[test]
 fn spec_lookback_stochastic() {
     let n = 30;
-    let high: Vec<f64> = (0..n).map(|x| 100.0 + x as f64).collect();
-    let low: Vec<f64> = (0..n).map(|x| 98.0 + x as f64).collect();
-    let close: Vec<f64> = (0..n).map(|x| 99.0 + x as f64).collect();
+    let high: Vec<f64> = (0..n).map(|x| 100.0 + f64::from(x)).collect();
+    let low: Vec<f64> = (0..n).map(|x| 98.0 + f64::from(x)).collect();
+    let close: Vec<f64> = (0..n).map(|x| 99.0 + f64::from(x)).collect();
     let k_period = 14;
     let d_period = 3;
     let result = stochastic_fast(&high, &low, &close, k_period, d_period).unwrap();
@@ -494,7 +495,7 @@ fn spec_lookback_functions_rolling_extrema() {
 
 #[test]
 fn spec_lookback_consistency_sma() {
-    let input: Vec<f64> = (0..20).map(|x| x as f64).collect();
+    let input: Vec<f64> = (0..20).map(f64::from).collect();
     let period = 5;
     let result = sma(&input, period).unwrap();
     let nan_count = result.iter().filter(|x| x.is_nan()).count();
@@ -503,7 +504,7 @@ fn spec_lookback_consistency_sma() {
 
 #[test]
 fn spec_lookback_consistency_ema() {
-    let input: Vec<f64> = (0..20).map(|x| x as f64).collect();
+    let input: Vec<f64> = (0..20).map(f64::from).collect();
     let period = 5;
     let result = ema(&input, period).unwrap();
     let nan_count = result.iter().filter(|x| x.is_nan()).count();
@@ -512,7 +513,7 @@ fn spec_lookback_consistency_ema() {
 
 #[test]
 fn spec_lookback_consistency_rsi() {
-    let input: Vec<f64> = (0..30).map(|x| x as f64).collect();
+    let input: Vec<f64> = (0..30).map(f64::from).collect();
     let period = 14;
     let result = rsi(&input, period).unwrap();
     let nan_count = result.iter().filter(|x| x.is_nan()).count();
@@ -521,7 +522,7 @@ fn spec_lookback_consistency_rsi() {
 
 #[test]
 fn spec_lookback_consistency_macd() {
-    let input: Vec<f64> = (0..50).map(|x| x as f64).collect();
+    let input: Vec<f64> = (0..50).map(f64::from).collect();
     let fast = 12;
     let slow = 26;
     let signal = 9;
@@ -537,9 +538,9 @@ fn spec_lookback_consistency_macd() {
 #[test]
 fn spec_lookback_consistency_atr() {
     let n = 30;
-    let high: Vec<f64> = (0..n).map(|x| 100.0 + x as f64).collect();
-    let low: Vec<f64> = (0..n).map(|x| 98.0 + x as f64).collect();
-    let close: Vec<f64> = (0..n).map(|x| 99.0 + x as f64).collect();
+    let high: Vec<f64> = (0..n).map(|x| 100.0 + f64::from(x)).collect();
+    let low: Vec<f64> = (0..n).map(|x| 98.0 + f64::from(x)).collect();
+    let close: Vec<f64> = (0..n).map(|x| 99.0 + f64::from(x)).collect();
     let period = 14;
 
     let result = atr(&high, &low, &close, period).unwrap();
@@ -553,7 +554,7 @@ fn spec_lookback_consistency_atr() {
 
 #[test]
 fn spec_lookback_consistency_bollinger() {
-    let input: Vec<f64> = (0..30).map(|x| x as f64).collect();
+    let input: Vec<f64> = (0..30).map(f64::from).collect();
     let period = 20;
     let result = bollinger(&input, period, 2.0).unwrap();
     let nan_count = result.middle.iter().filter(|x| x.is_nan()).count();
@@ -563,9 +564,9 @@ fn spec_lookback_consistency_bollinger() {
 #[test]
 fn spec_lookback_consistency_stochastic() {
     let n = 30;
-    let high: Vec<f64> = (0..n).map(|x| 100.0 + x as f64).collect();
-    let low: Vec<f64> = (0..n).map(|x| 98.0 + x as f64).collect();
-    let close: Vec<f64> = (0..n).map(|x| 99.0 + x as f64).collect();
+    let high: Vec<f64> = (0..n).map(|x| 100.0 + f64::from(x)).collect();
+    let low: Vec<f64> = (0..n).map(|x| 98.0 + f64::from(x)).collect();
+    let close: Vec<f64> = (0..n).map(|x| 99.0 + f64::from(x)).collect();
     let k_period = 14;
     let d_period = 3;
 
@@ -621,7 +622,7 @@ fn output_length_contract_rsi() {
     for input_len in [10, 20, 50, 100] {
         let input: Vec<f64> = (0..input_len).map(|x| x as f64).collect();
         for period in [3, 7, 14] {
-            if input_len >= period + 1 {
+            if input_len > period {
                 let result = rsi(&input, period).unwrap();
                 assert_eq!(
                     result.len(),
@@ -635,7 +636,7 @@ fn output_length_contract_rsi() {
 
 #[test]
 fn output_length_contract_macd() {
-    let input: Vec<f64> = (0..50).map(|x| x as f64).collect();
+    let input: Vec<f64> = (0..50).map(f64::from).collect();
     let result = macd(&input, 12, 26, 9).unwrap();
 
     assert_eq!(
@@ -708,8 +709,16 @@ fn output_length_contract_stochastic() {
 
     let result = stochastic_fast(&high, &low, &close, 14, 3).unwrap();
 
-    assert_eq!(result.k.len(), n, "Stochastic %K output length should match input length");
-    assert_eq!(result.d.len(), n, "Stochastic %D output length should match input length");
+    assert_eq!(
+        result.k.len(),
+        n,
+        "Stochastic %K output length should match input length"
+    );
+    assert_eq!(
+        result.d.len(),
+        n,
+        "Stochastic %D output length should match input length"
+    );
 }
 
 #[test]
@@ -743,7 +752,9 @@ fn spec_adx_lookback() {
 
 #[test]
 fn spec_adx_multi_output() {
-    let high = vec![10.0_f64, 12.0, 11.5, 13.0, 12.5, 14.0, 13.5, 15.0, 14.5, 16.0];
+    let high = vec![
+        10.0_f64, 12.0, 11.5, 13.0, 12.5, 14.0, 13.5, 15.0, 14.5, 16.0,
+    ];
     let low = vec![8.0, 9.0, 9.5, 10.0, 10.5, 11.0, 11.5, 12.0, 12.5, 13.0];
     let close = vec![9.0, 11.0, 10.5, 12.0, 11.5, 13.0, 12.5, 14.0, 13.5, 15.0];
 
@@ -757,8 +768,12 @@ fn spec_adx_multi_output() {
     // ADX should be between 0 and 100
     for i in 5..10 {
         if !result.adx[i].is_nan() {
-            assert!(result.adx[i] >= 0.0 && result.adx[i] <= 100.0,
-                "ADX should be in [0, 100], got {} at index {}", result.adx[i], i);
+            assert!(
+                result.adx[i] >= 0.0 && result.adx[i] <= 100.0,
+                "ADX should be in [0, 100], got {} at index {}",
+                result.adx[i],
+                i
+            );
         }
     }
 }
@@ -766,9 +781,9 @@ fn spec_adx_multi_output() {
 #[test]
 fn spec_adx_lookback_consistency() {
     let n = 30;
-    let high: Vec<f64> = (0..n).map(|x| 100.0 + x as f64 + 1.0).collect();
-    let low: Vec<f64> = (0..n).map(|x| 100.0 + x as f64 - 1.0).collect();
-    let close: Vec<f64> = (0..n).map(|x| 100.0 + x as f64).collect();
+    let high: Vec<f64> = (0..n).map(|x| 100.0 + f64::from(x) + 1.0).collect();
+    let low: Vec<f64> = (0..n).map(|x| 100.0 + f64::from(x) - 1.0).collect();
+    let close: Vec<f64> = (0..n).map(|x| 100.0 + f64::from(x)).collect();
     let period = 7;
 
     let result = adx(&high, &low, &close, period).unwrap();
@@ -824,9 +839,9 @@ fn spec_williams_r_lookback() {
 #[test]
 fn spec_williams_r_lookback_consistency() {
     let n = 30;
-    let high: Vec<f64> = (0..n).map(|x| 100.0 + x as f64 + 1.0).collect();
-    let low: Vec<f64> = (0..n).map(|x| 100.0 + x as f64 - 1.0).collect();
-    let close: Vec<f64> = (0..n).map(|x| 100.0 + x as f64).collect();
+    let high: Vec<f64> = (0..n).map(|x| 100.0 + f64::from(x) + 1.0).collect();
+    let low: Vec<f64> = (0..n).map(|x| 100.0 + f64::from(x) - 1.0).collect();
+    let close: Vec<f64> = (0..n).map(|x| 100.0 + f64::from(x)).collect();
     let period = 14;
 
     let result = williams_r(&high, &low, &close, period).unwrap();
@@ -867,8 +882,8 @@ fn spec_donchian_lookback() {
 #[test]
 fn spec_donchian_lookback_consistency() {
     let n = 30;
-    let high: Vec<f64> = (0..n).map(|x| 100.0 + x as f64 + 1.0).collect();
-    let low: Vec<f64> = (0..n).map(|x| 100.0 + x as f64 - 1.0).collect();
+    let high: Vec<f64> = (0..n).map(|x| 100.0 + f64::from(x) + 1.0).collect();
+    let low: Vec<f64> = (0..n).map(|x| 100.0 + f64::from(x) - 1.0).collect();
     let period = 20;
 
     let result = donchian(&high, &low, period).unwrap();

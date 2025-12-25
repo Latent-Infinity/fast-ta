@@ -6,24 +6,23 @@
 //! # Features
 //!
 //! - **Performance**: O(n) algorithms with optimized memory access patterns
-//! - **Accuracy**: Validated against TA-Lib golden reference outputs
+//! - **Accuracy**: Validated against spec fixtures with documented edge cases
 //! - **Generics**: Works with both `f32` and `f64` data types
 //! - **Safety**: Comprehensive error handling for edge cases
+//! - **Ergonomic**: Simple API with `_into` variants for zero-allocation use
 //!
 //! # Quick Start
 //!
 //! ```
 //! use fast_ta::prelude::*;
-//! use fast_ta::indicators::sma;
 //!
-//! let data = vec![1.0_f64, 2.0, 3.0, 4.0, 5.0];
-//! let result = sma(&data, 3).unwrap();
+//! let prices = vec![44.0_f64, 44.5, 43.5, 44.0, 44.5, 45.0, 45.5, 46.0, 46.5, 47.0];
+//! let sma_result = sma(&prices, 5).unwrap();
 //!
-//! // First 2 values are NaN (lookback period)
-//! assert!(result[0].is_nan());
-//! assert!(result[1].is_nan());
-//! // SMA values start from index 2
-//! assert!((result[2] - 2.0).abs() < 1e-10);
+//! // First 4 values are NaN (lookback period)
+//! assert!(sma_result[3].is_nan());
+//! // SMA starts at index 4
+//! assert!((sma_result[4] - 44.1).abs() < 0.01);
 //! ```
 //!
 //! # Available Indicators
@@ -31,15 +30,60 @@
 //! ## Moving Averages
 //! - [`indicators::sma()`]: Simple Moving Average
 //! - [`indicators::ema()`]: Exponential Moving Average
+//! - [`indicators::ema_wilder()`]: Wilder's Smoothing (alpha = 1/n)
 //!
 //! ## Momentum
 //! - [`indicators::rsi()`]: Relative Strength Index
 //! - [`indicators::macd()`]: Moving Average Convergence Divergence
-//! - [`indicators::stochastic_fast()`]: Stochastic Oscillator (fast, slow, full)
+//! - [`indicators::stochastic_fast()`]: Fast Stochastic Oscillator
+//! - [`indicators::stochastic_slow()`]: Slow Stochastic Oscillator
+//! - [`indicators::williams_r()`]: Williams %R
+//! - [`indicators::adx()`]: Average Directional Index
 //!
 //! ## Volatility
 //! - [`indicators::atr()`]: Average True Range
 //! - [`indicators::bollinger()`]: Bollinger Bands
+//! - [`indicators::donchian()`]: Donchian Channels
+//!
+//! ## Volume
+//! - [`indicators::obv()`]: On-Balance Volume
+//! - [`indicators::vwap()`]: Volume Weighted Average Price
+//!
+//! # API Layers
+//!
+//! ## Simple API
+//!
+//! The simplest way to compute indicators:
+//!
+//! ```
+//! use fast_ta::prelude::*;
+//!
+//! let prices = vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0];
+//! let result = sma(&prices, 3).unwrap();
+//! ```
+//!
+//! ## Buffer API (`_into` variants)
+//!
+//! For high-performance use with pre-allocated buffers:
+//!
+//! ```
+//! use fast_ta::prelude::*;
+//!
+//! let prices = vec![1.0; 1000];
+//! let mut output = vec![0.0; 1000];
+//! sma_into(&prices, 20, &mut output).unwrap();
+//! ```
+//!
+//! ## Configuration Types
+//!
+//! For indicators with many parameters:
+//!
+//! ```
+//! use fast_ta::prelude::*;
+//!
+//! let prices = vec![1.0; 100];
+//! let result = Macd::default().compute(&prices).unwrap();
+//! ```
 //!
 //! # Error Handling
 //!
@@ -47,7 +91,6 @@
 //!
 //! ```
 //! use fast_ta::prelude::*;
-//! use fast_ta::indicators::sma;
 //!
 //! // Period too long for data
 //! let short_data = vec![1.0_f64, 2.0];
@@ -59,6 +102,12 @@
 //! let result = sma(&empty, 5);
 //! assert!(result.is_err());
 //! ```
+//!
+//! # Numeric Behavior
+//!
+//! - **NaN propagation**: NaN in window produces NaN output
+//! - **Full-length output**: Output length equals input length (NaN prefix for lookback)
+//! - **Deterministic**: Same inputs always produce identical outputs
 
 #![deny(missing_docs)]
 #![warn(clippy::all)]
@@ -69,7 +118,31 @@
 #![warn(clippy::or_fun_call)]
 #![warn(clippy::inefficient_to_string)]
 #![warn(clippy::useless_conversion)]
+// Allowed pedantic lints - intentional design choices for this codebase
 #![allow(clippy::module_name_repetitions)]
+#![allow(clippy::similar_names)] // Financial indicator variables often have similar names (e.g., ema1, ema2)
+#![allow(clippy::cast_precision_loss)] // Expected when casting usize to f64 for indicator calculations
+#![allow(clippy::cast_possible_truncation)] // Controlled truncation in period calculations
+#![allow(clippy::cast_sign_loss)] // Controlled in validated contexts
+#![allow(clippy::too_many_lines)] // Complex indicators naturally have longer functions
+#![allow(clippy::too_many_arguments)] // OHLCV indicators require multiple array parameters
+#![allow(clippy::needless_range_loop)] // Index loops often clearer for array algorithms
+#![allow(clippy::float_cmp)] // Intentional NaN checks and exact comparisons
+#![allow(clippy::suboptimal_flops)] // mul_add can change results; we prioritize reproducibility
+#![allow(clippy::many_single_char_names)] // Common in mathematical code (i, j, n, etc.)
+#![allow(clippy::manual_range_contains)] // Explicit comparisons often clearer in bounds checking
+#![allow(clippy::cast_lossless)] // Explicit i32 to f64 casts are intentional
+#![allow(clippy::redundant_else)] // Style preference for explicit else blocks
+#![allow(clippy::int_plus_one)] // Explicit +1/-1 comparisons clearer in index math
+#![allow(clippy::manual_slice_size_calculation)] // Explicit slice calculations clearer
+#![allow(clippy::struct_field_names)] // Naming convention for period fields is intentional
+#![allow(clippy::manual_memcpy)] // Explicit loops for clarity in algorithm code
+#![allow(clippy::if_not_else)] // Style preference
+#![allow(clippy::manual_clamp)] // Explicit clamping clearer in some contexts
+#![allow(clippy::missing_panics_doc)] // Panics are unreachable in validated paths
+#![allow(clippy::approx_constant)] // Explicit constant values for reproducibility
+#![allow(clippy::type_complexity)] // Complex types acceptable for generic indicator functions
+#![allow(clippy::unnecessary_wraps)] // Some Results are for API consistency
 
 pub mod batch;
 pub mod error;
@@ -83,4 +156,6 @@ pub mod utils;
 pub use error::{Error, Result};
 pub use indicators::sma;
 pub use traits::{SeriesElement, ValidatedInput};
-pub use utils::{approx_eq, approx_eq_relative, count_nan_prefix, count_nans, EPSILON, LOOSE_EPSILON};
+pub use utils::{
+    approx_eq, approx_eq_relative, count_nan_prefix, count_nans, EPSILON, LOOSE_EPSILON,
+};

@@ -32,7 +32,9 @@
 //! - 2: Data error (file not found, parse error)
 //! - 3: Computation error (indicator failed)
 
-use fast_ta_cli::args::{Args, Command, parse_bollinger_params, parse_macd_params, parse_stochastic_params};
+use fast_ta_cli::args::{
+    parse_bollinger_params, parse_macd_params, parse_stochastic_params, Args, Command,
+};
 use fast_ta_cli::csv_parser::{self, parse_csv, parse_ohlc, parse_ohlcv};
 use fast_ta_cli::csv_writer::{write_multi_output, write_single_output, OutputDest};
 use fast_ta_cli::{CliError, Result};
@@ -75,42 +77,43 @@ fn run() -> Result<()> {
     };
 
     match &args.command {
-        Command::Sma { period, input, column, .. } => {
-            run_sma(input, *period, column.as_deref(), &output_dest)
-        }
-        Command::Ema { period, input, column, .. } => {
-            run_ema(input, *period, column.as_deref(), &output_dest)
-        }
-        Command::Rsi { period, input, column, .. } => {
-            run_rsi(input, *period, column.as_deref(), &output_dest)
-        }
-        Command::Macd { params, input, column, .. } => {
-            run_macd(input, params, column.as_deref(), &output_dest)
-        }
-        Command::Bollinger { params, input, column, .. } => {
-            run_bollinger(input, params, column.as_deref(), &output_dest)
-        }
-        Command::Atr { period, input, .. } => {
-            run_atr(input, *period, &output_dest)
-        }
-        Command::Stochastic { params, input, .. } => {
-            run_stochastic(input, params, &output_dest)
-        }
-        Command::Adx { period, input, .. } => {
-            run_adx(input, *period, &output_dest)
-        }
-        Command::WilliamsR { period, input, .. } => {
-            run_williams_r(input, *period, &output_dest)
-        }
-        Command::Donchian { period, input, .. } => {
-            run_donchian(input, *period, &output_dest)
-        }
-        Command::Obv { input, .. } => {
-            run_obv(input, &output_dest)
-        }
-        Command::Vwap { input, .. } => {
-            run_vwap(input, &output_dest)
-        }
+        Command::Sma {
+            period,
+            input,
+            column,
+            ..
+        } => run_sma(input, *period, column.as_deref(), &output_dest),
+        Command::Ema {
+            period,
+            input,
+            column,
+            ..
+        } => run_ema(input, *period, column.as_deref(), &output_dest),
+        Command::Rsi {
+            period,
+            input,
+            column,
+            ..
+        } => run_rsi(input, *period, column.as_deref(), &output_dest),
+        Command::Macd {
+            params,
+            input,
+            column,
+            ..
+        } => run_macd(input, params, column.as_deref(), &output_dest),
+        Command::Bollinger {
+            params,
+            input,
+            column,
+            ..
+        } => run_bollinger(input, params, column.as_deref(), &output_dest),
+        Command::Atr { period, input, .. } => run_atr(input, *period, &output_dest),
+        Command::Stochastic { params, input, .. } => run_stochastic(input, params, &output_dest),
+        Command::Adx { period, input, .. } => run_adx(input, *period, &output_dest),
+        Command::WilliamsR { period, input, .. } => run_williams_r(input, *period, &output_dest),
+        Command::Donchian { period, input, .. } => run_donchian(input, *period, &output_dest),
+        Command::Obv { input, .. } => run_obv(input, &output_dest),
+        Command::Vwap { input, .. } => run_vwap(input, &output_dest),
     }
 }
 
@@ -118,15 +121,22 @@ fn run() -> Result<()> {
 fn get_close_prices(parsed: &csv_parser::ParsedCsv, column: Option<&str>) -> Result<Vec<f64>> {
     if let Some(col_name) = column {
         let normalized = col_name.trim().to_lowercase();
-        parsed.get_column(&normalized).cloned().ok_or_else(|| CliError::CsvParseError {
-            message: format!("column '{}' not found", col_name),
-            line: None,
-        })
+        parsed
+            .get_column(&normalized)
+            .cloned()
+            .ok_or_else(|| CliError::CsvParseError {
+                message: format!("column '{col_name}' not found"),
+                line: None,
+            })
     } else {
-        parsed.get_close().cloned().ok_or_else(|| CliError::CsvParseError {
-            message: "no close price column found (expected 'close', 'price', or 'adj close')".to_string(),
-            line: None,
-        })
+        parsed
+            .get_close()
+            .cloned()
+            .ok_or_else(|| CliError::CsvParseError {
+                message: "no close price column found (expected 'close', 'price', or 'adj close')"
+                    .to_string(),
+                line: None,
+            })
     }
 }
 
@@ -137,7 +147,7 @@ fn run_sma(input: &str, period: usize, column: Option<&str>, dest: &OutputDest) 
 
     let output = sma(&close, period)?;
     let lookback = period.saturating_sub(1);
-    let header = format!("sma_{}", period);
+    let header = format!("sma_{period}");
 
     write_single_output(&output, &header, parsed.dates.as_deref(), lookback, dest)
 }
@@ -149,7 +159,7 @@ fn run_ema(input: &str, period: usize, column: Option<&str>, dest: &OutputDest) 
 
     let output = ema(&close, period)?;
     let lookback = period.saturating_sub(1);
-    let header = format!("ema_{}", period);
+    let header = format!("ema_{period}");
 
     write_single_output(&output, &header, parsed.dates.as_deref(), lookback, dest)
 }
@@ -161,7 +171,7 @@ fn run_rsi(input: &str, period: usize, column: Option<&str>, dest: &OutputDest) 
 
     let output = rsi(&close, period)?;
     let lookback = period; // RSI has lookback equal to period
-    let header = format!("rsi_{}", period);
+    let header = format!("rsi_{period}");
 
     write_single_output(&output, &header, parsed.dates.as_deref(), lookback, dest)
 }
@@ -212,7 +222,7 @@ fn run_atr(input: &str, period: usize, dest: &OutputDest) -> Result<()> {
 
     let output = atr(&ohlc.high, &ohlc.low, &ohlc.close, period)?;
     let lookback = period; // ATR has lookback equal to period
-    let header = format!("atr_{}", period);
+    let header = format!("atr_{period}");
 
     write_single_output(&output, &header, ohlc.dates.as_deref(), lookback, dest)
 }
@@ -223,15 +233,19 @@ fn run_stochastic(input: &str, params: &str, dest: &OutputDest) -> Result<()> {
 
     let ohlc = parse_ohlc(input)?;
 
-    let result = stochastic(&ohlc.high, &ohlc.low, &ohlc.close, k_period, d_period, k_slowing)?;
+    let result = stochastic(
+        &ohlc.high,
+        &ohlc.low,
+        &ohlc.close,
+        k_period,
+        d_period,
+        k_slowing,
+    )?;
 
     // Stochastic lookback: k_period + k_slowing - 2 for %K, plus d_period - 1 for %D
     let lookback = k_period + k_slowing + d_period - 3;
 
-    let columns: Vec<(&str, &[f64])> = vec![
-        ("percent_k", &result.k),
-        ("percent_d", &result.d),
-    ];
+    let columns: Vec<(&str, &[f64])> = vec![("percent_k", &result.k), ("percent_d", &result.d)];
 
     write_multi_output(&columns, ohlc.dates.as_deref(), lookback, dest)
 }
@@ -260,7 +274,7 @@ fn run_williams_r(input: &str, period: usize, dest: &OutputDest) -> Result<()> {
 
     let output = williams_r(&ohlc.high, &ohlc.low, &ohlc.close, period)?;
     let lookback = period.saturating_sub(1);
-    let header = format!("williams_r_{}", period);
+    let header = format!("williams_r_{period}");
 
     write_single_output(&output, &header, ohlc.dates.as_deref(), lookback, dest)
 }

@@ -130,12 +130,7 @@ pub const fn vwap_min_len() -> usize {
 /// assert!(!result[0].is_nan());
 /// ```
 #[must_use = "this returns a Result with VWAP values, which should be used"]
-pub fn vwap<T: SeriesElement>(
-    high: &[T],
-    low: &[T],
-    close: &[T],
-    volume: &[T],
-) -> Result<Vec<T>> {
+pub fn vwap<T: SeriesElement>(high: &[T], low: &[T], close: &[T], volume: &[T]) -> Result<Vec<T>> {
     validate_inputs(high, low, close, volume)?;
 
     let n = high.len();
@@ -638,7 +633,9 @@ mod tests {
         let high = vec![10.5_f64, 11.0, 10.8, 11.2, 11.0, 11.5, 11.2, 11.8];
         let low = vec![10.0, 10.3, 10.2, 10.5, 10.3, 10.8, 10.5, 11.0];
         let close = vec![10.2, 10.8, 10.5, 11.0, 10.7, 11.2, 10.9, 11.5];
-        let volume = vec![1000.0, 1500.0, 1200.0, 1800.0, 1100.0, 1600.0, 1300.0, 1700.0];
+        let volume = vec![
+            1000.0, 1500.0, 1200.0, 1800.0, 1100.0, 1600.0, 1300.0, 1700.0,
+        ];
 
         let result1 = vwap(&high, &low, &close, &volume).unwrap();
 
@@ -646,8 +643,13 @@ mod tests {
         vwap_into(&high, &low, &close, &volume, &mut output).unwrap();
 
         for i in 0..8 {
-            assert!(approx_eq(result1[i], output[i], EPSILON),
-                "Mismatch at {}: {} vs {}", i, result1[i], output[i]);
+            assert!(
+                approx_eq(result1[i], output[i], EPSILON),
+                "Mismatch at {}: {} vs {}",
+                i,
+                result1[i],
+                output[i]
+            );
         }
     }
 
@@ -684,7 +686,9 @@ mod tests {
     #[test]
     fn test_vwap_between_price_extremes() {
         // VWAP should always be between the lowest low and highest high
-        let high: Vec<f64> = (0..30).map(|i| 110.0 + 5.0 * ((i as f64) * 0.3).sin()).collect();
+        let high: Vec<f64> = (0..30)
+            .map(|i| 110.0 + 5.0 * ((i as f64) * 0.3).sin())
+            .collect();
         let low: Vec<f64> = high.iter().map(|h| h - 3.0).collect();
         let close: Vec<f64> = high.iter().map(|h| h - 1.5).collect();
         let volume: Vec<f64> = (0..30).map(|_| 1000.0).collect();
@@ -695,10 +699,20 @@ mod tests {
         let max_high = high.iter().cloned().fold(f64::NEG_INFINITY, f64::max);
 
         for (i, val) in result.iter().enumerate() {
-            assert!(*val >= min_low - EPSILON,
-                "VWAP at {} should be >= min low: {} >= {}", i, val, min_low);
-            assert!(*val <= max_high + EPSILON,
-                "VWAP at {} should be <= max high: {} <= {}", i, val, max_high);
+            assert!(
+                *val >= min_low - EPSILON,
+                "VWAP at {} should be >= min low: {} >= {}",
+                i,
+                val,
+                min_low
+            );
+            assert!(
+                *val <= max_high + EPSILON,
+                "VWAP at {} should be <= max high: {} <= {}",
+                i,
+                val,
+                max_high
+            );
         }
     }
 
@@ -716,9 +730,12 @@ mod tests {
 
         // In an uptrend with equal volume, price should be above VWAP
         let typical_last = (108.0 + 107.0 + 107.5) / 3.0;
-        assert!(typical_last > result[4],
+        assert!(
+            typical_last > result[4],
             "Current typical price {} should be above VWAP {} in uptrend",
-            typical_last, result[4]);
+            typical_last,
+            result[4]
+        );
     }
 
     #[test]
@@ -740,9 +757,13 @@ mod tests {
         // Final VWAP should be closer to early typical than late typical
         let dist_to_early = (result[4] - early_typical).abs();
         let dist_to_late = (result[4] - late_typical).abs();
-        assert!(dist_to_early < dist_to_late,
+        assert!(
+            dist_to_early < dist_to_late,
             "VWAP {} should be closer to early typical {} than late typical {}",
-            result[4], early_typical, late_typical);
+            result[4],
+            early_typical,
+            late_typical
+        );
     }
 
     #[test]
@@ -758,8 +779,13 @@ mod tests {
         let expected_tp = (100.0 + 98.0 + 99.0) / 3.0;
 
         for (i, val) in result.iter().enumerate() {
-            assert!(approx_eq(*val, expected_tp, EPSILON),
-                "VWAP at {} should be {}, got {}", i, expected_tp, val);
+            assert!(
+                approx_eq(*val, expected_tp, EPSILON),
+                "VWAP at {} should be {}, got {}",
+                i,
+                expected_tp,
+                val
+            );
         }
     }
 }

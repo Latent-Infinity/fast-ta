@@ -3,6 +3,12 @@
 //! These tests validate the ergonomics and usability of the fast-ta public API,
 //! ensuring that typical usage patterns work correctly and feel natural.
 
+#![allow(clippy::needless_range_loop)]
+#![allow(clippy::cast_precision_loss)]
+#![allow(clippy::similar_names)]
+#![allow(clippy::unreadable_literal)]
+#![allow(clippy::float_cmp)]
+
 use fast_ta::prelude::*;
 use fast_ta::Error;
 
@@ -47,17 +53,26 @@ fn test_compute_single_indicator() {
     // SMA
     let sma_result = sma(&prices, 5).unwrap();
     assert_eq!(sma_result.len(), prices.len());
-    assert_eq!(sma_result.iter().take_while(|x| x.is_nan()).count(), sma_lookback(5));
+    assert_eq!(
+        sma_result.iter().take_while(|x| x.is_nan()).count(),
+        sma_lookback(5)
+    );
 
     // EMA
     let ema_result = ema(&prices, 5).unwrap();
     assert_eq!(ema_result.len(), prices.len());
-    assert_eq!(ema_result.iter().take_while(|x| x.is_nan()).count(), ema_lookback(5));
+    assert_eq!(
+        ema_result.iter().take_while(|x| x.is_nan()).count(),
+        ema_lookback(5)
+    );
 
     // RSI
     let rsi_result = rsi(&prices, 5).unwrap();
     assert_eq!(rsi_result.len(), prices.len());
-    assert_eq!(rsi_result.iter().take_while(|x| x.is_nan()).count(), rsi_lookback(5));
+    assert_eq!(
+        rsi_result.iter().take_while(|x| x.is_nan()).count(),
+        rsi_lookback(5)
+    );
 }
 
 #[test]
@@ -115,13 +130,12 @@ fn test_error_messages_are_actionable() {
 
     let result = sma(&prices, 10);
     let err = result.unwrap_err();
-    let msg = format!("{}", err);
+    let msg = format!("{err}");
 
     // Error message should explain what went wrong
     assert!(
         msg.contains("Insufficient") || msg.contains("insufficient") || msg.contains("data"),
-        "Error message should explain the issue: {}",
-        msg
+        "Error message should explain the issue: {msg}"
     );
 }
 
@@ -148,7 +162,7 @@ fn test_into_variant_ema() {
 
     // First (period-1) values should be NaN
     for i in 0..ema_lookback(5) {
-        assert!(output[i].is_nan(), "Expected NaN at index {}", i);
+        assert!(output[i].is_nan(), "Expected NaN at index {i}");
     }
 }
 
@@ -193,8 +207,7 @@ fn test_macd_multi_output() {
         let expected_hist = result.macd_line[i] - result.signal_line[i];
         assert!(
             (result.histogram[i] - expected_hist).abs() < 1e-10,
-            "Histogram mismatch at index {}",
-            i
+            "Histogram mismatch at index {i}"
         );
     }
 }
@@ -240,8 +253,7 @@ fn test_bollinger_multi_output() {
     for i in sma_lookback(5)..prices.len() {
         assert!(
             (result.middle[i] - sma_result[i]).abs() < 1e-10,
-            "Middle band should equal SMA at index {}",
-            i
+            "Middle band should equal SMA at index {i}"
         );
     }
 }
@@ -276,7 +288,10 @@ fn test_stochastic_multi_output() {
     // %K and %D should be in range [0, 100] for valid values
     for i in stochastic_k_lookback(5)..close.len() {
         if !result.k[i].is_nan() {
-            assert!(result.k[i] >= 0.0 && result.k[i] <= 100.0, "%K out of range at {}", i);
+            assert!(
+                result.k[i] >= 0.0 && result.k[i] <= 100.0,
+                "%K out of range at {i}"
+            );
         }
     }
 }
@@ -308,7 +323,7 @@ fn test_atr_with_ohlc_data() {
 
     // ATR should be positive for valid values
     for i in atr_lookback(5)..close.len() {
-        assert!(result[i] > 0.0, "ATR should be positive at index {}", i);
+        assert!(result[i] > 0.0, "ATR should be positive at index {i}");
     }
 }
 
@@ -324,7 +339,10 @@ fn test_true_range() {
 
     // TR should be positive for valid values
     for i in 1..close.len() {
-        assert!(result[i] > 0.0, "True Range should be positive at index {}", i);
+        assert!(
+            result[i] > 0.0,
+            "True Range should be positive at index {i}"
+        );
     }
 }
 
@@ -420,7 +438,10 @@ fn test_rolling_extrema_available() {
 
     // Max should be >= corresponding value, min should be <= for valid positions
     for i in rolling_extrema_lookback(5)..prices.len() {
-        assert!(max_result[i] >= prices[i - 4], "Max should be >= lookback window values");
+        assert!(
+            max_result[i] >= prices[i - 4],
+            "Max should be >= lookback window values"
+        );
         assert!(min_result[i] <= prices[i], "Min should be <= current value");
     }
 }
@@ -481,7 +502,7 @@ use fast_ta::indicators::{Bollinger, Macd, Stochastic};
 
 #[test]
 fn test_macd_default_compute() {
-    let prices: Vec<f64> = (0..50).map(|i| 100.0 + (i as f64) * 0.5).collect();
+    let prices: Vec<f64> = (0..50).map(|i| 100.0 + f64::from(i) * 0.5).collect();
 
     // Default (12, 26, 9)
     let result = Macd::default().compute(&prices).unwrap();
@@ -491,7 +512,7 @@ fn test_macd_default_compute() {
 
 #[test]
 fn test_macd_fluent_api() {
-    let prices: Vec<f64> = (0..50).map(|i| 100.0 + (i as f64) * 0.5).collect();
+    let prices: Vec<f64> = (0..50).map(|i| 100.0 + f64::from(i) * 0.5).collect();
 
     // Custom (10, 21, 7)
     let result = Macd::new()
@@ -509,10 +530,7 @@ fn test_macd_fluent_api() {
 
 #[test]
 fn test_macd_config_getters() {
-    let config = Macd::new()
-        .fast_period(10)
-        .slow_period(21)
-        .signal_period(7);
+    let config = Macd::new().fast_period(10).slow_period(21).signal_period(7);
 
     assert_eq!(config.get_fast_period(), 10);
     assert_eq!(config.get_slow_period(), 21);
@@ -524,7 +542,7 @@ fn test_macd_config_getters() {
 
 #[test]
 fn test_bollinger_default_compute() {
-    let prices: Vec<f64> = (0..30).map(|i| 100.0 + (i as f64) * 0.5).collect();
+    let prices: Vec<f64> = (0..30).map(|i| 100.0 + f64::from(i) * 0.5).collect();
 
     // Default (20, 2.0)
     let result = Bollinger::default().compute(&prices).unwrap();
@@ -534,7 +552,7 @@ fn test_bollinger_default_compute() {
 
 #[test]
 fn test_bollinger_fluent_api() {
-    let prices: Vec<f64> = (0..20).map(|i| 100.0 + (i as f64) * 0.5).collect();
+    let prices: Vec<f64> = (0..20).map(|i| 100.0 + f64::from(i) * 0.5).collect();
 
     // Custom (10, 2.5)
     let result = Bollinger::new()
@@ -551,9 +569,7 @@ fn test_bollinger_fluent_api() {
 
 #[test]
 fn test_bollinger_config_getters() {
-    let config = Bollinger::new()
-        .period(10)
-        .std_dev(2.5);
+    let config = Bollinger::new().period(10).std_dev(2.5);
 
     assert_eq!(config.get_period(), 10);
     assert!((config.get_std_dev() - 2.5).abs() < 1e-10);
@@ -582,9 +598,7 @@ fn test_stochastic_fast_constructor() {
     let (high, low, close) = sample_ohlc();
 
     // Fast stochastic (k_smooth = 1)
-    let result = Stochastic::fast(5, 3)
-        .compute(&high, &low, &close)
-        .unwrap();
+    let result = Stochastic::fast(5, 3).compute(&high, &low, &close).unwrap();
 
     // Should produce same result as stochastic_fast function
     let direct = stochastic_fast(&high, &low, &close, 5, 3).unwrap();
@@ -608,9 +622,7 @@ fn test_stochastic_slow_constructor() {
     let (high, low, close) = sample_ohlc();
 
     // Slow stochastic (k_smooth = 3)
-    let result = Stochastic::slow(5, 3)
-        .compute(&high, &low, &close)
-        .unwrap();
+    let result = Stochastic::slow(5, 3).compute(&high, &low, &close).unwrap();
 
     assert_eq!(result.k.len(), close.len());
     assert_eq!(result.d.len(), close.len());
@@ -618,10 +630,7 @@ fn test_stochastic_slow_constructor() {
 
 #[test]
 fn test_stochastic_config_getters() {
-    let config = Stochastic::new()
-        .k_period(14)
-        .d_period(5)
-        .k_slowing(3);
+    let config = Stochastic::new().k_period(14).d_period(5).k_slowing(3);
 
     assert_eq!(config.get_k_period(), 14);
     assert_eq!(config.get_d_period(), 5);
@@ -633,8 +642,8 @@ fn test_stochastic_config_getters() {
 
 #[test]
 fn test_config_types_reusable() {
-    let prices1: Vec<f64> = (0..50).map(|i| 100.0 + (i as f64)).collect();
-    let prices2: Vec<f64> = (0..50).map(|i| 200.0 - (i as f64)).collect();
+    let prices1: Vec<f64> = (0..50).map(|i| 100.0 + f64::from(i)).collect();
+    let prices2: Vec<f64> = (0..50).map(|i| 200.0 - f64::from(i)).collect();
 
     // Same config can be reused for multiple computations
     let macd_config = Macd::new().fast_period(5).slow_period(10).signal_period(3);
@@ -648,7 +657,7 @@ fn test_config_types_reusable() {
 
 #[test]
 fn test_config_types_invalid_params_fail_fast() {
-    let prices: Vec<f64> = (0..50).map(|i| 100.0 + (i as f64)).collect();
+    let prices: Vec<f64> = (0..50).map(|i| 100.0 + f64::from(i)).collect();
 
     // MACD with fast >= slow should error
     let result = Macd::new()

@@ -206,7 +206,15 @@ pub fn adx<T: SeriesElement>(
     let mut plus_di = vec![T::nan(); n];
     let mut minus_di = vec![T::nan(); n];
 
-    compute_adx_core(high, low, close, period, &mut adx_out, &mut plus_di, &mut minus_di)?;
+    compute_adx_core(
+        high,
+        low,
+        close,
+        period,
+        &mut adx_out,
+        &mut plus_di,
+        &mut minus_di,
+    )?;
 
     Ok(AdxOutput {
         adx: adx_out,
@@ -433,7 +441,8 @@ fn compute_adx_core<T: SeriesElement>(
 
     for i in 1..=period {
         let tr = compute_true_range(high[i], low[i], close[i - 1]);
-        let (plus_dm, minus_dm) = compute_directional_movement(high[i], high[i - 1], low[i], low[i - 1]);
+        let (plus_dm, minus_dm) =
+            compute_directional_movement(high[i], high[i - 1], low[i], low[i - 1]);
         sum_tr = sum_tr + tr;
         sum_plus_dm = sum_plus_dm + plus_dm;
         sum_minus_dm = sum_minus_dm + minus_dm;
@@ -473,7 +482,8 @@ fn compute_adx_core<T: SeriesElement>(
 
     for i in (period + 1)..(2 * period) {
         let tr = compute_true_range(high[i], low[i], close[i - 1]);
-        let (plus_dm, minus_dm) = compute_directional_movement(high[i], high[i - 1], low[i], low[i - 1]);
+        let (plus_dm, minus_dm) =
+            compute_directional_movement(high[i], high[i - 1], low[i], low[i - 1]);
 
         // Wilder smoothing: smoothed = (prev * (period-1) + current) / period
         // Equivalent to: smoothed = prev - prev/period + current
@@ -514,7 +524,8 @@ fn compute_adx_core<T: SeriesElement>(
     // Continue computing +DI, -DI, and apply Wilder smoothing to ADX
     for i in (2 * period)..n {
         let tr = compute_true_range(high[i], low[i], close[i - 1]);
-        let (plus_dm, minus_dm) = compute_directional_movement(high[i], high[i - 1], low[i], low[i - 1]);
+        let (plus_dm, minus_dm) =
+            compute_directional_movement(high[i], high[i - 1], low[i], low[i - 1]);
 
         // Wilder smoothing for TR, +DM, -DM
         smoothed_tr = smoothed_tr - smoothed_tr / period_t + tr;
@@ -576,16 +587,16 @@ mod tests {
     #[test]
     fn test_adx_lookback() {
         assert_eq!(adx_lookback(14), 27); // 2 * 14 - 1 = 27
-        assert_eq!(adx_lookback(5), 9);   // 2 * 5 - 1 = 9
-        assert_eq!(adx_lookback(1), 1);   // 2 * 1 - 1 = 1
+        assert_eq!(adx_lookback(5), 9); // 2 * 5 - 1 = 9
+        assert_eq!(adx_lookback(1), 1); // 2 * 1 - 1 = 1
         assert_eq!(adx_lookback(10), 19); // 2 * 10 - 1 = 19
     }
 
     #[test]
     fn test_adx_min_len() {
         assert_eq!(adx_min_len(14), 28); // 2 * 14 = 28
-        assert_eq!(adx_min_len(5), 10);  // 2 * 5 = 10
-        assert_eq!(adx_min_len(1), 2);   // 2 * 1 = 2
+        assert_eq!(adx_min_len(5), 10); // 2 * 5 = 10
+        assert_eq!(adx_min_len(1), 2); // 2 * 1 = 2
         assert_eq!(adx_min_len(10), 20); // 2 * 10 = 20
     }
 
@@ -601,7 +612,9 @@ mod tests {
     #[test]
     fn test_adx_basic() {
         // Simple test with enough data for period 3
-        let high = vec![10.0_f64, 11.0, 12.0, 13.0, 14.0, 15.0, 14.5, 15.5, 16.0, 15.0];
+        let high = vec![
+            10.0_f64, 11.0, 12.0, 13.0, 14.0, 15.0, 14.5, 15.5, 16.0, 15.0,
+        ];
         let low = vec![9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 13.5, 14.5, 15.0, 14.0];
         let close = vec![9.5, 10.5, 11.5, 12.5, 13.5, 14.5, 14.0, 15.0, 15.5, 14.5];
 
@@ -630,7 +643,9 @@ mod tests {
 
     #[test]
     fn test_adx_f32() {
-        let high = vec![10.0_f32, 11.0, 12.0, 13.0, 14.0, 15.0, 14.5, 15.5, 16.0, 15.0];
+        let high = vec![
+            10.0_f32, 11.0, 12.0, 13.0, 14.0, 15.0, 14.5, 15.5, 16.0, 15.0,
+        ];
         let low = vec![9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 13.5, 14.5, 15.0, 14.0];
         let close = vec![9.5, 10.5, 11.5, 12.5, 13.5, 14.5, 14.0, 15.0, 15.5, 14.5];
 
@@ -659,7 +674,9 @@ mod tests {
     #[test]
     fn test_adx_values_in_range() {
         // ADX, +DI, -DI should all be in [0, 100]
-        let high: Vec<f64> = (0..30).map(|i| 100.0 + (i as f64) * 2.0 + 5.0 * ((i as f64) * 0.5).sin()).collect();
+        let high: Vec<f64> = (0..30)
+            .map(|i| 100.0 + (i as f64) * 2.0 + 5.0 * ((i as f64) * 0.5).sin())
+            .collect();
         let low: Vec<f64> = high.iter().map(|h| h - 3.0).collect();
         let close: Vec<f64> = high.iter().map(|h| h - 1.5).collect();
 
@@ -671,13 +688,28 @@ mod tests {
             let minus_di = result.minus_di[i];
 
             if !adx_val.is_nan() {
-                assert!(adx_val >= 0.0 && adx_val <= 100.0, "ADX at {} = {} out of range", i, adx_val);
+                assert!(
+                    adx_val >= 0.0 && adx_val <= 100.0,
+                    "ADX at {} = {} out of range",
+                    i,
+                    adx_val
+                );
             }
             if !plus_di.is_nan() {
-                assert!(plus_di >= 0.0 && plus_di <= 100.0, "+DI at {} = {} out of range", i, plus_di);
+                assert!(
+                    plus_di >= 0.0 && plus_di <= 100.0,
+                    "+DI at {} = {} out of range",
+                    i,
+                    plus_di
+                );
             }
             if !minus_di.is_nan() {
-                assert!(minus_di >= 0.0 && minus_di <= 100.0, "-DI at {} = {} out of range", i, minus_di);
+                assert!(
+                    minus_di >= 0.0 && minus_di <= 100.0,
+                    "-DI at {} = {} out of range",
+                    i,
+                    minus_di
+                );
             }
         }
     }
@@ -695,9 +727,13 @@ mod tests {
 
         // After lookback, +DI should be significantly > -DI
         for i in 9..result.adx.len() {
-            assert!(result.plus_di[i] > result.minus_di[i],
+            assert!(
+                result.plus_di[i] > result.minus_di[i],
                 "+DI should be > -DI in uptrend at {}: +DI={}, -DI={}",
-                i, result.plus_di[i], result.minus_di[i]);
+                i,
+                result.plus_di[i],
+                result.minus_di[i]
+            );
         }
     }
 
@@ -712,9 +748,13 @@ mod tests {
 
         // After lookback, -DI should be significantly > +DI
         for i in 9..result.adx.len() {
-            assert!(result.minus_di[i] > result.plus_di[i],
+            assert!(
+                result.minus_di[i] > result.plus_di[i],
                 "-DI should be > +DI in downtrend at {}: +DI={}, -DI={}",
-                i, result.plus_di[i], result.minus_di[i]);
+                i,
+                result.plus_di[i],
+                result.minus_di[i]
+            );
         }
     }
 
@@ -730,10 +770,16 @@ mod tests {
         // With no movement, +DI and -DI should be 0
         for i in 5..result.plus_di.len() {
             // DI values should be 0 or close to 0 since there's no directional movement
-            assert!(result.plus_di[i] < 0.1 || result.plus_di[i].is_nan(),
-                "+DI should be ~0 with no movement at {}", i);
-            assert!(result.minus_di[i] < 0.1 || result.minus_di[i].is_nan(),
-                "-DI should be ~0 with no movement at {}", i);
+            assert!(
+                result.plus_di[i] < 0.1 || result.plus_di[i].is_nan(),
+                "+DI should be ~0 with no movement at {}",
+                i
+            );
+            assert!(
+                result.minus_di[i] < 0.1 || result.minus_di[i].is_nan(),
+                "-DI should be ~0 with no movement at {}",
+                i
+            );
         }
     }
 
@@ -756,7 +802,10 @@ mod tests {
         let close = vec![9.5_f64; 10];
 
         let result = adx(&high, &low, &close, 0);
-        assert!(matches!(result, Err(Error::InvalidPeriod { period: 0, .. })));
+        assert!(matches!(
+            result,
+            Err(Error::InvalidPeriod { period: 0, .. })
+        ));
     }
 
     #[test]
@@ -772,7 +821,9 @@ mod tests {
 
     #[test]
     fn test_adx_mismatched_lengths() {
-        let high = vec![10.0_f64, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0, 18.0, 19.0];
+        let high = vec![
+            10.0_f64, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0, 18.0, 19.0,
+        ];
         let low = vec![9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0]; // One less
         let close = vec![9.5, 10.5, 11.5, 12.5, 13.5, 14.5, 15.5, 16.5, 17.5, 18.5];
 
@@ -798,7 +849,9 @@ mod tests {
 
     #[test]
     fn test_adx_into_basic() {
-        let high = vec![10.0_f64, 11.0, 12.0, 13.0, 14.0, 15.0, 14.5, 15.5, 16.0, 15.0];
+        let high = vec![
+            10.0_f64, 11.0, 12.0, 13.0, 14.0, 15.0, 14.5, 15.5, 16.0, 15.0,
+        ];
         let low = vec![9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 13.5, 14.5, 15.0, 14.0];
         let close = vec![9.5, 10.5, 11.5, 12.5, 13.5, 14.5, 14.0, 15.0, 15.5, 14.5];
 
@@ -806,7 +859,16 @@ mod tests {
         let mut plus_di = vec![0.0_f64; 10];
         let mut minus_di = vec![0.0_f64; 10];
 
-        let valid_count = adx_into(&high, &low, &close, 3, &mut adx_out, &mut plus_di, &mut minus_di).unwrap();
+        let valid_count = adx_into(
+            &high,
+            &low,
+            &close,
+            3,
+            &mut adx_out,
+            &mut plus_di,
+            &mut minus_di,
+        )
+        .unwrap();
 
         assert_eq!(valid_count, 5); // 10 - 5 = 5 valid ADX values
 
@@ -825,30 +887,68 @@ mod tests {
         let mut plus_di = vec![0.0_f64; 10];
         let mut minus_di = vec![0.0_f64; 10];
 
-        let result = adx_into(&high, &low, &close, 3, &mut adx_out, &mut plus_di, &mut minus_di);
+        let result = adx_into(
+            &high,
+            &low,
+            &close,
+            3,
+            &mut adx_out,
+            &mut plus_di,
+            &mut minus_di,
+        );
         assert!(matches!(result, Err(Error::BufferTooSmall { .. })));
     }
 
     #[test]
     fn test_adx_and_adx_into_produce_same_result() {
-        let high = vec![10.0_f64, 11.0, 12.0, 13.0, 14.0, 15.0, 14.5, 15.5, 16.0, 15.0, 16.5, 17.0];
-        let low = vec![9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 13.5, 14.5, 15.0, 14.0, 15.5, 16.0];
-        let close = vec![9.5, 10.5, 11.5, 12.5, 13.5, 14.5, 14.0, 15.0, 15.5, 14.5, 16.0, 16.5];
+        let high = vec![
+            10.0_f64, 11.0, 12.0, 13.0, 14.0, 15.0, 14.5, 15.5, 16.0, 15.0, 16.5, 17.0,
+        ];
+        let low = vec![
+            9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 13.5, 14.5, 15.0, 14.0, 15.5, 16.0,
+        ];
+        let close = vec![
+            9.5, 10.5, 11.5, 12.5, 13.5, 14.5, 14.0, 15.0, 15.5, 14.5, 16.0, 16.5,
+        ];
 
         let result1 = adx(&high, &low, &close, 3).unwrap();
 
         let mut adx_out = vec![0.0_f64; 12];
         let mut plus_di = vec![0.0_f64; 12];
         let mut minus_di = vec![0.0_f64; 12];
-        adx_into(&high, &low, &close, 3, &mut adx_out, &mut plus_di, &mut minus_di).unwrap();
+        adx_into(
+            &high,
+            &low,
+            &close,
+            3,
+            &mut adx_out,
+            &mut plus_di,
+            &mut minus_di,
+        )
+        .unwrap();
 
         for i in 0..12 {
-            assert!(approx_eq(result1.adx[i], adx_out[i], EPSILON),
-                "ADX mismatch at {}: {} vs {}", i, result1.adx[i], adx_out[i]);
-            assert!(approx_eq(result1.plus_di[i], plus_di[i], EPSILON),
-                "+DI mismatch at {}: {} vs {}", i, result1.plus_di[i], plus_di[i]);
-            assert!(approx_eq(result1.minus_di[i], minus_di[i], EPSILON),
-                "-DI mismatch at {}: {} vs {}", i, result1.minus_di[i], minus_di[i]);
+            assert!(
+                approx_eq(result1.adx[i], adx_out[i], EPSILON),
+                "ADX mismatch at {}: {} vs {}",
+                i,
+                result1.adx[i],
+                adx_out[i]
+            );
+            assert!(
+                approx_eq(result1.plus_di[i], plus_di[i], EPSILON),
+                "+DI mismatch at {}: {} vs {}",
+                i,
+                result1.plus_di[i],
+                plus_di[i]
+            );
+            assert!(
+                approx_eq(result1.minus_di[i], minus_di[i], EPSILON),
+                "-DI mismatch at {}: {} vs {}",
+                i,
+                result1.minus_di[i],
+                minus_di[i]
+            );
         }
     }
 
@@ -856,9 +956,31 @@ mod tests {
 
     #[test]
     fn test_adx_with_nan_in_data() {
-        let high = vec![10.0_f64, f64::NAN, 12.0, 13.0, 14.0, 15.0, 14.5, 15.5, 16.0, 15.0];
+        let high = vec![
+            10.0_f64,
+            f64::NAN,
+            12.0,
+            13.0,
+            14.0,
+            15.0,
+            14.5,
+            15.5,
+            16.0,
+            15.0,
+        ];
         let low = vec![9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 13.5, 14.5, 15.0, 14.0];
-        let close = vec![9.5, f64::NAN, 11.5, 12.5, 13.5, 14.5, 14.0, 15.0, 15.5, 14.5];
+        let close = vec![
+            9.5,
+            f64::NAN,
+            11.5,
+            12.5,
+            13.5,
+            14.5,
+            14.0,
+            15.0,
+            15.5,
+            14.5,
+        ];
 
         let result = adx(&high, &low, &close, 3).unwrap();
 
@@ -947,13 +1069,19 @@ mod tests {
 
             let adx_nan_count = result.adx.iter().filter(|x| x.is_nan()).count();
             let expected_adx_nan = 2 * period - 1;
-            assert_eq!(adx_nan_count, expected_adx_nan,
-                "Expected {} NaN ADX values for period {}, got {}", expected_adx_nan, period, adx_nan_count);
+            assert_eq!(
+                adx_nan_count, expected_adx_nan,
+                "Expected {} NaN ADX values for period {}, got {}",
+                expected_adx_nan, period, adx_nan_count
+            );
 
             let di_nan_count = result.plus_di.iter().filter(|x| x.is_nan()).count();
             let expected_di_nan = period;
-            assert_eq!(di_nan_count, expected_di_nan,
-                "Expected {} NaN +DI values for period {}, got {}", expected_di_nan, period, di_nan_count);
+            assert_eq!(
+                di_nan_count, expected_di_nan,
+                "Expected {} NaN +DI values for period {}, got {}",
+                expected_di_nan, period, di_nan_count
+            );
         }
     }
 
@@ -978,7 +1106,11 @@ mod tests {
 
         // In a strong accelerating trend, ADX should be relatively high
         let late_adx = result.adx[25];
-        assert!(late_adx > 20.0, "ADX should be elevated in strong trend: {}", late_adx);
+        assert!(
+            late_adx > 20.0,
+            "ADX should be elevated in strong trend: {}",
+            late_adx
+        );
     }
 
     #[test]

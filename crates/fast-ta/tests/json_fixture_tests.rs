@@ -3,6 +3,15 @@
 //! These tests load fixtures from JSON files and verify indicator behavior.
 //! The JSON files in tests/fixtures/ are the canonical specification.
 
+#![allow(clippy::needless_range_loop)]
+#![allow(clippy::cast_precision_loss)]
+#![allow(clippy::similar_names)]
+#![allow(clippy::unreadable_literal)]
+#![allow(clippy::float_cmp)]
+#![allow(clippy::too_many_lines)]
+#![allow(clippy::cast_possible_truncation)]
+#![allow(clippy::manual_let_else)]
+
 use fast_ta::indicators::{
     atr::{atr, true_range},
     bollinger::bollinger,
@@ -49,9 +58,7 @@ struct SpecFixture {
 fn load_fixture(path: &Path) -> Option<SpecFixture> {
     let content = fs::read_to_string(path).expect("Failed to read fixture file");
     let value: Value = serde_json::from_str(&content).expect("Failed to parse fixture JSON");
-    if !value.get("spec_version").is_some() {
-        return None;
-    }
+    value.get("spec_version")?;
     let fixture: SpecFixture = serde_json::from_value(value).expect("Invalid fixture schema");
     assert_eq!(
         fixture.spec_version, SPEC_VERSION,
@@ -74,7 +81,7 @@ fn parse_opt_vec_f64(value: &Value) -> Vec<Option<f64>> {
         .as_array()
         .expect("Expected array")
         .iter()
-        .map(|v| v.as_f64())
+        .map(serde_json::Value::as_f64)
         .collect()
 }
 
@@ -215,7 +222,8 @@ fn json_spec_fixtures() {
                 .expected
                 .get("expected_first_valid_index")
                 .and_then(Value::as_u64)
-                .expect("Missing expected_first_valid_index") as usize;
+                .expect("Missing expected_first_valid_index")
+                as usize;
             let result = atr(&high, &low, &close, period).expect("ATR failed");
             let tr = true_range(&high, &low, &close).expect("TR failed");
             let mut sum = 0.0;
@@ -249,20 +257,19 @@ fn json_spec_fixtures() {
 
             if let Some(expected_obj) = fixture.expected.as_object() {
                 if expected_obj.contains_key("middle") {
-                    let middle = parse_opt_vec_f64(
-                        expected_obj.get("middle").expect("Missing middle"),
-                    );
-                    let upper = parse_opt_vec_f64(
-                        expected_obj.get("upper").expect("Missing upper"),
-                    );
-                    let lower = parse_opt_vec_f64(
-                        expected_obj.get("lower").expect("Missing lower"),
-                    );
+                    let middle =
+                        parse_opt_vec_f64(expected_obj.get("middle").expect("Missing middle"));
+                    let upper =
+                        parse_opt_vec_f64(expected_obj.get("upper").expect("Missing upper"));
+                    let lower =
+                        parse_opt_vec_f64(expected_obj.get("lower").expect("Missing lower"));
                     assert_expected_vec(&result.middle, &middle, EPSILON, file_name);
                     assert_expected_vec(&result.upper, &upper, EPSILON, file_name);
                     assert_expected_vec(&result.lower, &lower, EPSILON, file_name);
                 } else if expected_obj.get("expected_property")
-                    == Some(&Value::String("upper - middle == middle - lower".to_string()))
+                    == Some(&Value::String(
+                        "upper - middle == middle - lower".to_string(),
+                    ))
                 {
                     for i in 0..result.middle.len() {
                         let upper = result.upper[i];
@@ -321,20 +328,18 @@ fn json_spec_fixtures() {
                 let expected = parse_opt_vec_f64(expected_k);
                 assert_expected_vec(&result.k, &expected, LOOSE_EPSILON, file_name);
             } else if let Some(expected_k) = fixture.expected.as_array() {
-                let expected = expected_k
-                    .iter()
-                    .map(|v| v.as_f64())
-                    .collect::<Vec<_>>();
+                let expected = expected_k.iter().map(serde_json::Value::as_f64).collect::<Vec<_>>();
                 assert_expected_vec(&result.k, &expected, EPSILON, file_name);
             } else if let (Some(expected_val), Some(indices)) = (
                 fixture.expected.get("expected_k_at_flat"),
                 fixture.expected.get("flat_indices"),
             ) {
-                let expected_val = expected_val.as_f64().expect("expected_k_at_flat must be f64");
+                let expected_val = expected_val
+                    .as_f64()
+                    .expect("expected_k_at_flat must be f64");
                 for index in indices
                     .as_array()
                     .expect("flat_indices must be array")
-                    .iter()
                 {
                     let idx = index.as_u64().expect("flat index must be u64") as usize;
                     assert!(
@@ -500,7 +505,9 @@ fn json_spec_fixtures() {
                     );
                 }
             } else if file_name.contains("macd") {
-                use fast_ta::indicators::macd::{macd_line_lookback, macd_min_len, macd_signal_lookback};
+                use fast_ta::indicators::macd::{
+                    macd_line_lookback, macd_min_len, macd_signal_lookback,
+                };
                 let fast = fixture
                     .params
                     .get("fast_period")
@@ -605,7 +612,7 @@ fn json_spec_fixtures() {
 
             // Check specific indices from expected
             let expected_obj = fixture.expected.as_object().expect("Expected object");
-            for (key, val) in expected_obj.iter() {
+            for (key, val) in expected_obj {
                 if key.starts_with("at_index_") {
                     let idx: usize = key.strip_prefix("at_index_").unwrap().parse().unwrap();
                     let expected_vals = val.as_object().unwrap();
@@ -632,7 +639,11 @@ fn json_spec_fixtures() {
             }
 
             // Verify lookback
-            assert_eq!(donchian_lookback(period), period - 1, "{file_name}: lookback");
+            assert_eq!(
+                donchian_lookback(period),
+                period - 1,
+                "{file_name}: lookback"
+            );
             assert_eq!(donchian_min_len(period), period, "{file_name}: min_len");
             continue;
         }
@@ -714,6 +725,9 @@ fn json_spec_fixtures() {
             continue;
         }
 
-        panic!("Unhandled fixture file: {file_name} ({} )", fixture.rationale);
+        panic!(
+            "Unhandled fixture file: {file_name} ({} )",
+            fixture.rationale
+        );
     }
 }

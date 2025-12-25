@@ -3,6 +3,12 @@
 //! These tests verify compliance with the numeric policy defined in PRD §4.3 and §4.5.
 //! The policy covers NaN propagation, infinity handling, and edge case behaviors.
 
+#![allow(clippy::needless_range_loop)]
+#![allow(clippy::cast_precision_loss)]
+#![allow(clippy::similar_names)]
+#![allow(clippy::unreadable_literal)]
+#![allow(clippy::float_cmp)]
+
 use fast_ta::indicators::{
     atr::{atr, true_range},
     bollinger::bollinger,
@@ -75,7 +81,7 @@ fn numeric_policy_nan_propagation_rsi() {
 
 #[test]
 fn numeric_policy_nan_propagation_macd() {
-    let mut data: Vec<f64> = (0..40).map(|x| x as f64).collect();
+    let mut data: Vec<f64> = (0..40).map(f64::from).collect();
     data[20] = f64::NAN;
     let result = macd(&data, 12, 26, 9).unwrap();
 
@@ -346,10 +352,7 @@ fn numeric_policy_bollinger_symmetric_bands() {
             let lower_diff = result.middle[i] - result.lower[i];
             assert!(
                 approx_eq(upper_diff, lower_diff, EPSILON),
-                "Bands should be symmetric at index {}: upper_diff={}, lower_diff={}",
-                i,
-                upper_diff,
-                lower_diff
+                "Bands should be symmetric at index {i}: upper_diff={upper_diff}, lower_diff={lower_diff}"
             );
         }
     }
@@ -455,10 +458,8 @@ fn numeric_policy_rsi_bounds() {
     for (i, &val) in result.iter().enumerate() {
         if !val.is_nan() {
             assert!(
-                val >= 0.0 && val <= 100.0,
-                "RSI at index {} = {} is out of bounds",
-                i,
-                val
+                (0.0..=100.0).contains(&val),
+                "RSI at index {i} = {val} is out of bounds"
             );
         }
     }
@@ -482,21 +483,394 @@ fn numeric_policy_stochastic_bounds() {
     for (i, &val) in result.k.iter().enumerate() {
         if !val.is_nan() {
             assert!(
-                val >= 0.0 && val <= 100.0,
-                "%K at index {} = {} is out of bounds",
-                i,
-                val
+                (0.0..=100.0).contains(&val),
+                "%K at index {i} = {val} is out of bounds"
             );
         }
     }
     for (i, &val) in result.d.iter().enumerate() {
         if !val.is_nan() {
             assert!(
-                val >= 0.0 && val <= 100.0,
-                "%D at index {} = {} is out of bounds",
-                i,
-                val
+                (0.0..=100.0).contains(&val),
+                "%D at index {i} = {val} is out of bounds"
             );
         }
+    }
+}
+
+// ==================== Task 4.2: Numeric Stability Edge Cases ====================
+// Tests for extreme values, denormalized numbers, and potential overflow/underflow
+
+#[test]
+fn numeric_stability_values_near_f64_max() {
+    // Values near f64::MAX (1.7976931348623157e308)
+    let data = vec![1e307_f64, 2e307, 3e307, 4e307, 5e307];
+    let result = sma(&data, 3).unwrap();
+
+    // Should not overflow
+    assert!(
+        !result[2].is_nan() && !result[2].is_infinite(),
+        "SMA should handle values near f64::MAX without overflow"
+    );
+    // Mean of [1e307, 2e307, 3e307] = 2e307
+    assert!(
+        (result[2] - 2e307).abs() / 2e307 < 1e-10,
+        "SMA should be accurate for large values"
+    );
+}
+
+#[test]
+fn numeric_stability_values_near_f64_min_positive() {
+    // Values near f64::MIN_POSITIVE (2.2250738585072014e-308)
+    let data = vec![1e-307_f64, 2e-307, 3e-307, 4e-307, 5e-307];
+    let result = sma(&data, 3).unwrap();
+
+    // Should not underflow to zero
+    assert!(
+        result[2] > 0.0,
+        "SMA should not underflow for small positive values"
+    );
+    assert!(
+        !result[2].is_nan(),
+        "SMA should not produce NaN for small values"
+    );
+}
+
+#[test]
+fn numeric_stability_denormalized_numbers() {
+    // Denormalized (subnormal) numbers: smaller than MIN_POSITIVE but > 0
+    let tiny = f64::MIN_POSITIVE / 2.0; // Subnormal number
+    let data = vec![tiny, tiny * 2.0, tiny * 3.0, tiny * 4.0, tiny * 5.0];
+
+    let result = sma(&data, 3).unwrap();
+
+    // Should handle subnormal numbers
+    assert!(
+        result[2] > 0.0,
+        "SMA should produce positive result for subnormal inputs"
+    );
+    assert!(
+        !result[2].is_nan(),
+        "SMA should not produce NaN for subnormal inputs"
+    );
+}
+
+#[test]
+fn numeric_stability_mixed_large_and_small() {
+    // Mix of large and small values in the same calculation
+    // This can cause precision loss
+    let data = vec![1e15_f64, 1.0, 1e15, 1.0, 1e15];
+    let result = sma(&data, 3).unwrap();
+
+    // The small values should not be "lost" entirely
+    // Mean of [1e15, 1.0, 1e15] ≈ 6.67e14
+    let expected = (1e15 + 1.0 + 1e15) / 3.0;
+    assert!(
+        !result[2].is_nan() && !result[2].is_infinite(),
+        "SMA should handle mixed scales"
+    );
+    // Allow some precision loss due to floating point
+    assert!(
+        (result[2] - expected).abs() / expected < 1e-10,
+        "SMA should be reasonably accurate for mixed scales"
+    );
+}
+
+#[test]
+fn numeric_stability_ema_large_values() {
+    // EMA with large values - test that alpha calculation doesn't overflow
+    let data = vec![1e200_f64, 2e200, 3e200, 4e200, 5e200, 6e200, 7e200];
+    let result = ema(&data, 3).unwrap();
+
+    // Should produce finite values
+    for (i, &val) in result.iter().enumerate().skip(2) {
+        assert!(
+            !val.is_nan() && !val.is_infinite(),
+            "EMA[{i}] should be finite for large inputs, got {val}"
+        );
+    }
+}
+
+#[test]
+fn numeric_stability_ema_small_values() {
+    // EMA with small values - test that alpha calculation doesn't underflow
+    let data = vec![1e-200_f64, 2e-200, 3e-200, 4e-200, 5e-200, 6e-200, 7e-200];
+    let result = ema(&data, 3).unwrap();
+
+    // Should produce positive values (not underflow to zero)
+    for (i, &val) in result.iter().enumerate().skip(2) {
+        assert!(
+            val > 0.0 && !val.is_nan(),
+            "EMA[{i}] should be positive for small inputs, got {val}"
+        );
+    }
+}
+
+#[test]
+fn numeric_stability_bollinger_large_values() {
+    // Bollinger Bands with large values - variance calculation could overflow
+    let data = vec![1e150_f64, 1.01e150, 1.02e150, 1.03e150, 1.04e150];
+    let result = bollinger(&data, 3, 2.0).unwrap();
+
+    // Should produce finite bands
+    for i in 2..result.middle.len() {
+        assert!(
+            !result.middle[i].is_nan() && !result.middle[i].is_infinite(),
+            "Bollinger middle[{i}] should be finite for large values"
+        );
+        assert!(
+            !result.upper[i].is_nan() && !result.upper[i].is_infinite(),
+            "Bollinger upper[{i}] should be finite for large values"
+        );
+        assert!(
+            !result.lower[i].is_nan() && !result.lower[i].is_infinite(),
+            "Bollinger lower[{i}] should be finite for large values"
+        );
+    }
+}
+
+#[test]
+fn numeric_stability_bollinger_small_variance() {
+    // Bollinger with very small variance - stddev calculation shouldn't underflow
+    let data = vec![1.0_f64, 1.0 + 1e-15, 1.0 + 2e-15, 1.0 + 3e-15, 1.0 + 4e-15];
+    let result = bollinger(&data, 3, 2.0).unwrap();
+
+    // Should produce valid bands (even if very narrow)
+    for i in 2..result.middle.len() {
+        assert!(
+            !result.middle[i].is_nan(),
+            "Bollinger middle should be valid for small variance"
+        );
+        // Upper should be >= middle (or equal if variance is 0)
+        assert!(
+            result.upper[i] >= result.middle[i] - 1e-10,
+            "Bollinger upper should be >= middle"
+        );
+    }
+}
+
+#[test]
+fn numeric_stability_rsi_large_moves() {
+    // RSI with very large price moves
+    let data = vec![
+        1e100_f64, 2e100, 1e100, 2e100, 1e100, 2e100, 1e100, 2e100, 1e100, 2e100,
+    ];
+    let result = rsi(&data, 5).unwrap();
+
+    // RSI should still be bounded [0, 100] even with large values
+    for (i, &val) in result.iter().enumerate() {
+        if !val.is_nan() {
+            assert!(
+                (0.0..=100.0).contains(&val),
+                "RSI[{i}] = {val} should be in [0, 100] for large moves"
+            );
+        }
+    }
+}
+
+#[test]
+fn numeric_stability_rsi_tiny_moves() {
+    // RSI with very tiny price moves (potential precision issues)
+    let data = vec![
+        1.0_f64,
+        1.0 + 1e-14,
+        1.0,
+        1.0 + 1e-14,
+        1.0,
+        1.0 + 1e-14,
+        1.0,
+        1.0 + 1e-14,
+        1.0,
+        1.0 + 1e-14,
+    ];
+    let result = rsi(&data, 5).unwrap();
+
+    // RSI should still be bounded [0, 100]
+    for (i, &val) in result.iter().enumerate() {
+        if !val.is_nan() {
+            assert!(
+                (0.0..=100.0).contains(&val),
+                "RSI[{i}] = {val} should be in [0, 100] for tiny moves"
+            );
+        }
+    }
+}
+
+#[test]
+fn numeric_stability_atr_large_ranges() {
+    // ATR with very large price ranges
+    let high = vec![2e100_f64, 2.1e100, 2.2e100, 2.3e100, 2.4e100, 2.5e100];
+    let low = vec![1e100_f64, 1.1e100, 1.2e100, 1.3e100, 1.4e100, 1.5e100];
+    let close = vec![1.5e100_f64, 1.6e100, 1.7e100, 1.8e100, 1.9e100, 2.0e100];
+
+    let result = atr(&high, &low, &close, 3).unwrap();
+
+    // Should produce finite results
+    for (i, &val) in result.iter().enumerate() {
+        if !val.is_nan() {
+            assert!(
+                val.is_finite(),
+                "ATR[{i}] should be finite for large ranges, got {val}"
+            );
+        }
+    }
+}
+
+#[test]
+fn numeric_stability_macd_large_values() {
+    // MACD with large values
+    let data: Vec<f64> = (0..40).map(|x| 1e100 + f64::from(x) * 1e98).collect();
+    let result = macd(&data, 12, 26, 9).unwrap();
+
+    // MACD line should be finite
+    for (i, &val) in result.macd_line.iter().enumerate() {
+        if !val.is_nan() {
+            assert!(
+                val.is_finite(),
+                "MACD line[{i}] should be finite for large values, got {val}"
+            );
+        }
+    }
+}
+
+#[test]
+fn numeric_stability_stochastic_extreme_range() {
+    // Stochastic with extreme high-low range
+    let high = vec![1e100_f64, 1e100, 1e100, 1e100, 1e100, 1e100];
+    let low = vec![1e50_f64, 1e50, 1e50, 1e50, 1e50, 1e50];
+    let close = vec![5e99_f64, 5e99, 5e99, 5e99, 5e99, 5e99]; // Close at ~50% of range
+
+    let result = stochastic_fast(&high, &low, &close, 3, 2).unwrap();
+
+    // %K should still be in [0, 100]
+    for (i, &val) in result.k.iter().enumerate() {
+        if !val.is_nan() {
+            assert!(
+                (0.0..=100.0).contains(&val),
+                "%K[{i}] = {val} should be in [0, 100] for extreme range"
+            );
+        }
+    }
+}
+
+#[test]
+fn numeric_stability_no_panics_for_extreme_inputs() {
+    // Verify no panics occur for extreme but valid inputs
+    let large = vec![f64::MAX / 2.0; 10];
+    let small = vec![f64::MIN_POSITIVE; 10];
+    let mixed = vec![
+        1e200, -1e200, 1e-200, -1e-200, 0.0, 1e200, -1e200, 1e-200, -1e-200, 0.0,
+    ];
+
+    // SMA should not panic
+    let _ = sma(&large, 3);
+    let _ = sma(&small, 3);
+    let _ = sma(&mixed, 3);
+
+    // EMA should not panic
+    let _ = ema(&large, 3);
+    let _ = ema(&small, 3);
+    let _ = ema(&mixed, 3);
+
+    // Bollinger should not panic (may produce infinity/NaN but shouldn't panic)
+    let _ = bollinger(&large, 3, 2.0);
+    let _ = bollinger(&small, 3, 2.0);
+    let _ = bollinger(&mixed, 3, 2.0);
+}
+
+#[test]
+fn numeric_stability_rolling_sum_precision() {
+    // Test that rolling SMA maintains precision over many iterations
+    // This tests for error accumulation in the rolling sum
+    let n = 10000;
+    let data: Vec<f64> = (0..n).map(|i| 100.0 + (i as f64) * 0.01).collect();
+    let result = sma(&data, 100).unwrap();
+
+    // Check a few values for correctness
+    // At index 99: SMA of data[0..100] = mean of 100.00 to 100.99
+    // Expected: 100.495
+    assert!(
+        (result[99] - 100.495).abs() < 1e-10,
+        "First valid SMA should be accurate: got {}",
+        result[99]
+    );
+
+    // At index n-1: SMA of data[n-100..n]
+    // Expected: mean of (100 + (n-100)*0.01) to (100 + (n-1)*0.01)
+    let last_idx = n - 1;
+    let expected_last = (0..100)
+        .map(|i| 100.0 + ((n - 100 + i) as f64) * 0.01)
+        .sum::<f64>()
+        / 100.0;
+    assert!(
+        (result[last_idx] - expected_last).abs() < 1e-8,
+        "Last SMA should be accurate after many iterations: expected {}, got {}",
+        expected_last,
+        result[last_idx]
+    );
+}
+
+#[test]
+fn numeric_stability_catastrophic_cancellation_realistic() {
+    // Test variance calculation with realistic financial data magnitudes
+    // Real stock prices are typically 1-10000, with small daily variance
+    let base = 1000.0_f64; // Realistic stock price
+    let data = vec![base, base + 0.5, base + 1.0, base + 1.5, base + 2.0];
+    let result = bollinger(&data, 3, 2.0).unwrap();
+
+    // Variance of [1000, 1000.5, 1001] window:
+    // Mean = 1000.5, Variance = (0.25 + 0 + 0.25) / 3 = 1/6
+    // StdDev = sqrt(1/6) ≈ 0.408
+    let expected_stddev = (1.0_f64 / 6.0).sqrt();
+    let actual_width = (result.upper[2] - result.middle[2]) / 2.0;
+
+    assert!(
+        (actual_width - expected_stddev).abs() < 1e-10,
+        "Bollinger should be accurate for realistic financial data: expected stddev {expected_stddev}, got {actual_width}"
+    );
+}
+
+#[test]
+fn numeric_stability_catastrophic_cancellation_documented_limitation() {
+    // KNOWN LIMITATION: For extremely large magnitude data (1e10+) with tiny variance,
+    // the sum-of-squares variance method loses precision due to catastrophic cancellation.
+    // This is documented in bollinger.rs: "Users with such data should pre-scale inputs."
+    //
+    // This test documents the limitation - it's not a bug but a design tradeoff for O(n) speed.
+
+    let base = 1e10_f64; // Extreme magnitude - outside typical financial data range
+    let data = vec![base, base + 1.0, base + 2.0, base + 3.0, base + 4.0];
+    let result = bollinger(&data, 3, 2.0).unwrap();
+
+    // The algorithm produces finite output (no panics/NaN)
+    assert!(
+        result.upper[2].is_finite(),
+        "Bollinger should produce finite output even for extreme magnitudes"
+    );
+
+    // NOTE: Precision IS lost here. The expected stddev is ~0.816 but actual may differ.
+    // This is the documented tradeoff. Users with 1e10+ magnitude data should pre-scale.
+    let expected_stddev = (2.0_f64 / 3.0).sqrt();
+    let actual_width = (result.upper[2] - result.middle[2]) / 2.0;
+
+    // Just verify it's not wildly wrong in a way that would cause problems
+    // (bands should still be ordered correctly and finite)
+    assert!(
+        result.upper[2] >= result.middle[2],
+        "Upper band should still be >= middle even with precision loss"
+    );
+    assert!(
+        result.middle[2] >= result.lower[2],
+        "Middle band should still be >= lower even with precision loss"
+    );
+
+    // Document the precision loss (this will show during test runs)
+    if (actual_width - expected_stddev).abs() > 1.0 {
+        // This is expected for extreme magnitudes - documented limitation
+        eprintln!(
+            "NOTE: Precision loss detected for extreme magnitude (1e10) data. \
+             Expected stddev: {expected_stddev:.6}, Actual: {actual_width:.6}. \
+             This is documented behavior - pre-scale inputs for such data."
+        );
     }
 }

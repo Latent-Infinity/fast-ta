@@ -133,7 +133,7 @@ pub enum Error {
 // ==========================================================================
 
 impl From<String> for Error {
-    /// Convert a String into a LengthMismatch error.
+    /// Convert a String into a `LengthMismatch` error.
     ///
     /// This is useful when you need to construct an error from a dynamically
     /// generated error message, particularly for OHLC length validation.
@@ -147,12 +147,12 @@ impl From<String> for Error {
     /// assert!(err.to_string().contains("100"));
     /// ```
     fn from(description: String) -> Self {
-        Error::LengthMismatch { description }
+        Self::LengthMismatch { description }
     }
 }
 
 impl From<&str> for Error {
-    /// Convert a &str into a LengthMismatch error.
+    /// Convert a &str into a `LengthMismatch` error.
     ///
     /// This is a convenience for creating errors from static strings.
     ///
@@ -165,7 +165,7 @@ impl From<&str> for Error {
     /// assert!(err.to_string().contains("different lengths"));
     /// ```
     fn from(description: &str) -> Self {
-        Error::LengthMismatch {
+        Self::LengthMismatch {
             description: description.to_string(),
         }
     }
@@ -332,7 +332,7 @@ mod tests {
         };
         let msg = err.to_string();
         // Message should explain what's invalid
-        assert!(msg.contains("0"), "Should mention the invalid period");
+        assert!(msg.contains('0'), "Should mention the invalid period");
         assert!(
             msg.contains("at least 1"),
             "Should mention the validation rule"
@@ -544,7 +544,7 @@ mod tests {
         // Test From with format! macro
         let high_len = 100;
         let low_len = 99;
-        let err: Error = format!("high: {}, low: {}", high_len, low_len).into();
+        let err: Error = format!("high: {high_len}, low: {low_len}").into();
         assert!(err.to_string().contains("100"));
         assert!(err.to_string().contains("99"));
     }
@@ -595,7 +595,7 @@ mod tests {
         // Test using From in a Result context with ? operator pattern
         fn validate_lengths(high_len: usize, low_len: usize) -> Result<()> {
             if high_len != low_len {
-                return Err(format!("high: {}, low: {}", high_len, low_len).into());
+                return Err(format!("high: {high_len}, low: {low_len}").into());
             }
             Ok(())
         }

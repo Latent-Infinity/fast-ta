@@ -5,13 +5,17 @@
 //!
 //! Use `--features reference-checks-strict` to treat divergences as test failures.
 
+#![allow(clippy::needless_range_loop)]
+#![allow(clippy::cast_precision_loss)]
+#![allow(clippy::similar_names)]
+#![allow(clippy::unreadable_literal)]
+#![allow(clippy::float_cmp)]
+#![allow(clippy::too_many_lines)]
+#![allow(clippy::cast_possible_truncation)]
+#![allow(clippy::manual_let_else)]
+
 use fast_ta::indicators::{
-    atr::atr,
-    bollinger::bollinger,
-    ema::ema,
-    macd::macd,
-    rsi::rsi,
-    sma::sma,
+    atr::atr, bollinger::bollinger, ema::ema, macd::macd, rsi::rsi, sma::sma,
     stochastic::stochastic_fast,
 };
 use serde::Deserialize;
@@ -42,7 +46,10 @@ macro_rules! reference_divergence {
         #[cfg(feature = "reference-checks-strict")]
         panic!($($arg)*);
         #[cfg(not(feature = "reference-checks-strict"))]
-        eprintln!("[WARN] {}", format!($($arg)*));
+        {
+            eprintln!("[WARN] {}", format!($($arg)*));
+            return;
+        }
     };
 }
 
@@ -67,7 +74,7 @@ fn parse_opt_vec_f64(value: &Value) -> Vec<Option<f64>> {
         .as_array()
         .expect("Expected array")
         .iter()
-        .map(|v| v.as_f64())
+        .map(serde_json::Value::as_f64)
         .collect()
 }
 
@@ -96,7 +103,6 @@ fn compare_vec(
             actual.len(),
             expected.len()
         );
-        return;
     }
 
     for (i, (a, e)) in actual.iter().zip(expected.iter()).enumerate() {
@@ -210,9 +216,27 @@ fn reference_golden_files() {
                 let upper = parse_opt_vec_f64(expected.get("upper").expect("Missing upper"));
                 let lower = parse_opt_vec_f64(expected.get("lower").expect("Missing lower"));
                 let result = bollinger(&input, period, num_std_dev).expect("Bollinger failed");
-                compare_vec("BOLL", &format!("{file_name}:middle"), &result.middle, &middle, EPSILON);
-                compare_vec("BOLL", &format!("{file_name}:upper"), &result.upper, &upper, EPSILON);
-                compare_vec("BOLL", &format!("{file_name}:lower"), &result.lower, &lower, EPSILON);
+                compare_vec(
+                    "BOLL",
+                    &format!("{file_name}:middle"),
+                    &result.middle,
+                    &middle,
+                    EPSILON,
+                );
+                compare_vec(
+                    "BOLL",
+                    &format!("{file_name}:upper"),
+                    &result.upper,
+                    &upper,
+                    EPSILON,
+                );
+                compare_vec(
+                    "BOLL",
+                    &format!("{file_name}:lower"),
+                    &result.lower,
+                    &lower,
+                    EPSILON,
+                );
             }
             "macd" => {
                 let input = parse_input_series(&case.input);
@@ -239,7 +263,13 @@ fn reference_golden_files() {
                 let histogram =
                     parse_opt_vec_f64(expected.get("histogram").expect("Missing histogram"));
                 let result = macd(&input, fast, slow, signal).expect("MACD failed");
-                compare_vec("MACD", &format!("{file_name}:macd"), &result.macd_line, &macd_line, EPSILON);
+                compare_vec(
+                    "MACD",
+                    &format!("{file_name}:macd"),
+                    &result.macd_line,
+                    &macd_line,
+                    EPSILON,
+                );
                 compare_vec(
                     "MACD",
                     &format!("{file_name}:signal"),
@@ -279,8 +309,8 @@ fn reference_golden_files() {
                     .and_then(Value::as_u64)
                     .expect("Missing d_period") as usize;
                 let expected = parse_opt_vec_f64(&case.expected);
-                let result =
-                    stochastic_fast(&high, &low, &close, k_period, d_period).expect("Stochastic failed");
+                let result = stochastic_fast(&high, &low, &close, k_period, d_period)
+                    .expect("Stochastic failed");
                 compare_vec("STOCH", file_name, &result.k, &expected, LOOSE_EPSILON);
             }
             _ => {}

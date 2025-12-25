@@ -9,11 +9,13 @@
 //! - Floating-point precision variations
 //! - Implementation-specific choices within specification boundaries
 
-use fast_ta::indicators::{
-    ema::ema,
-    rsi::rsi,
-    sma::sma,
-};
+#![allow(clippy::needless_range_loop)]
+#![allow(clippy::cast_precision_loss)]
+#![allow(clippy::similar_names)]
+#![allow(clippy::unreadable_literal)]
+#![allow(clippy::float_cmp)]
+
+use fast_ta::indicators::{ema::ema, rsi::rsi, sma::sma};
 
 const EPSILON: f64 = 1e-10;
 const LOOSE_EPSILON: f64 = 1e-6;
@@ -43,8 +45,7 @@ fn compare_results(
             None => {
                 if !a.is_nan() {
                     eprintln!(
-                        "[WARN] {}/{}: index {} expected NaN, got {}",
-                        indicator, test_name, i, a
+                        "[WARN] {indicator}/{test_name}: index {i} expected NaN, got {a}"
                     );
                     discrepancies += 1;
                 }
@@ -53,7 +54,12 @@ fn compare_results(
                 if !approx_eq(*a, *exp, tolerance) {
                     eprintln!(
                         "[WARN] {}/{}: index {} expected {}, got {} (diff: {})",
-                        indicator, test_name, i, exp, a, (a - exp).abs()
+                        indicator,
+                        test_name,
+                        i,
+                        exp,
+                        a,
+                        (a - exp).abs()
                     );
                     discrepancies += 1;
                 }
@@ -62,7 +68,9 @@ fn compare_results(
     }
 
     if discrepancies == 0 {
-        eprintln!("[OK] {}/{}: all values match within tolerance", indicator, test_name);
+        eprintln!(
+            "[OK] {indicator}/{test_name}: all values match within tolerance"
+        );
     }
 
     discrepancies
@@ -74,8 +82,16 @@ fn compare_results(
 fn golden_sma_simple_ascending() {
     let input: Vec<f64> = vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0];
     let expected: Vec<Option<f64>> = vec![
-        None, None, Some(2.0), Some(3.0), Some(4.0),
-        Some(5.0), Some(6.0), Some(7.0), Some(8.0), Some(9.0),
+        None,
+        None,
+        Some(2.0),
+        Some(3.0),
+        Some(4.0),
+        Some(5.0),
+        Some(6.0),
+        Some(7.0),
+        Some(8.0),
+        Some(9.0),
     ];
 
     let result = sma(&input, 3).unwrap();
@@ -83,7 +99,9 @@ fn golden_sma_simple_ascending() {
 
     // Non-blocking: log but don't fail
     if discrepancies > 0 {
-        eprintln!("[INFO] SMA/simple_ascending: {} discrepancies (informational)", discrepancies);
+        eprintln!(
+            "[INFO] SMA/simple_ascending: {discrepancies} discrepancies (informational)"
+        );
     }
 }
 
@@ -96,22 +114,25 @@ fn golden_sma_constant_values() {
     let discrepancies = compare_results("SMA", "constant_values", &result, &expected, EPSILON);
 
     if discrepancies > 0 {
-        eprintln!("[INFO] SMA/constant_values: {} discrepancies (informational)", discrepancies);
+        eprintln!(
+            "[INFO] SMA/constant_values: {discrepancies} discrepancies (informational)"
+        );
     }
 }
 
 #[test]
 fn golden_sma_period_5() {
     let input: Vec<f64> = vec![10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0];
-    let expected: Vec<Option<f64>> = vec![
-        None, None, None, None, Some(30.0), Some(40.0), Some(50.0),
-    ];
+    let expected: Vec<Option<f64>> =
+        vec![None, None, None, None, Some(30.0), Some(40.0), Some(50.0)];
 
     let result = sma(&input, 5).unwrap();
     let discrepancies = compare_results("SMA", "period_5", &result, &expected, EPSILON);
 
     if discrepancies > 0 {
-        eprintln!("[INFO] SMA/period_5: {} discrepancies (informational)", discrepancies);
+        eprintln!(
+            "[INFO] SMA/period_5: {discrepancies} discrepancies (informational)"
+        );
     }
 }
 
@@ -121,14 +142,21 @@ fn golden_sma_period_5() {
 fn golden_ema_constant_values() {
     let input: Vec<f64> = vec![100.0, 100.0, 100.0, 100.0, 100.0, 100.0];
     let expected: Vec<Option<f64>> = vec![
-        None, None, Some(100.0), Some(100.0), Some(100.0), Some(100.0),
+        None,
+        None,
+        Some(100.0),
+        Some(100.0),
+        Some(100.0),
+        Some(100.0),
     ];
 
     let result = ema(&input, 3).unwrap();
     let discrepancies = compare_results("EMA", "constant_values", &result, &expected, EPSILON);
 
     if discrepancies > 0 {
-        eprintln!("[INFO] EMA/constant_values: {} discrepancies (informational)", discrepancies);
+        eprintln!(
+            "[INFO] EMA/constant_values: {discrepancies} discrepancies (informational)"
+        );
     }
 }
 
@@ -145,7 +173,9 @@ fn golden_ema_ascending_period_3() {
     let discrepancies = compare_results("EMA", "ascending_period_3", &result, &expected, EPSILON);
 
     if discrepancies > 0 {
-        eprintln!("[INFO] EMA/ascending_period_3: {} discrepancies (informational)", discrepancies);
+        eprintln!(
+            "[INFO] EMA/ascending_period_3: {discrepancies} discrepancies (informational)"
+        );
     }
 }
 
@@ -155,29 +185,38 @@ fn golden_ema_ascending_period_3() {
 fn golden_rsi_all_gains() {
     let input: Vec<f64> = vec![10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0];
     let expected: Vec<Option<f64>> = vec![
-        None, None, None, Some(100.0), Some(100.0), Some(100.0), Some(100.0),
+        None,
+        None,
+        None,
+        Some(100.0),
+        Some(100.0),
+        Some(100.0),
+        Some(100.0),
     ];
 
     let result = rsi(&input, 3).unwrap();
     let discrepancies = compare_results("RSI", "all_gains", &result, &expected, LOOSE_EPSILON);
 
     if discrepancies > 0 {
-        eprintln!("[INFO] RSI/all_gains: {} discrepancies (informational)", discrepancies);
+        eprintln!(
+            "[INFO] RSI/all_gains: {discrepancies} discrepancies (informational)"
+        );
     }
 }
 
 #[test]
 fn golden_rsi_all_losses() {
     let input: Vec<f64> = vec![20.0, 19.0, 18.0, 17.0, 16.0, 15.0, 14.0];
-    let expected: Vec<Option<f64>> = vec![
-        None, None, None, Some(0.0), Some(0.0), Some(0.0), Some(0.0),
-    ];
+    let expected: Vec<Option<f64>> =
+        vec![None, None, None, Some(0.0), Some(0.0), Some(0.0), Some(0.0)];
 
     let result = rsi(&input, 3).unwrap();
     let discrepancies = compare_results("RSI", "all_losses", &result, &expected, LOOSE_EPSILON);
 
     if discrepancies > 0 {
-        eprintln!("[INFO] RSI/all_losses: {} discrepancies (informational)", discrepancies);
+        eprintln!(
+            "[INFO] RSI/all_losses: {discrepancies} discrepancies (informational)"
+        );
     }
 }
 
@@ -192,16 +231,13 @@ fn golden_rsi_mixed_movement() {
     for (i, &val) in result.iter().enumerate() {
         if !val.is_nan() {
             assert!(
-                val >= 0.0 && val <= 100.0,
-                "RSI at index {} out of range: {}",
-                i,
-                val
+                (0.0..=100.0).contains(&val),
+                "RSI at index {i} out of range: {val}"
             );
             // For alternating, expect roughly around 50
-            if val < 30.0 || val > 70.0 {
+            if !(30.0..=70.0).contains(&val) {
                 eprintln!(
-                    "[WARN] RSI/mixed_movement: index {} value {} outside expected range [30, 70]",
-                    i, val
+                    "[WARN] RSI/mixed_movement: index {i} value {val} outside expected range [30, 70]"
                 );
             }
         }

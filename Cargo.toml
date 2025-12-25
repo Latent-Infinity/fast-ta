@@ -1,12 +1,12 @@
 [workspace]
 resolver = "2"
-members = ["crates/fast-ta", "crates/fast-ta-cli"]
+members = ["crates/fast-ta", "crates/fast-ta-cli", "crates/fast-ta-python"]
 
 [workspace.package]
 version = "0.1.0"
 edition = "2021"
 rust-version = "1.75"
-license = "MIT OR Apache-2.0"
+license = "MIT"
 repository = "https://github.com/latenty-infinity/fast-ta"
 authors = ["Latenty Infinity"]
 

@@ -363,8 +363,12 @@ mod tests {
         // Values from index 2 onwards should be valid and in [-100, 0]
         for i in 2..result.len() {
             assert!(!result[i].is_nan(), "Value at {} should not be NaN", i);
-            assert!(result[i] >= -100.0 && result[i] <= 0.0,
-                "Value at {} = {} should be in [-100, 0]", i, result[i]);
+            assert!(
+                result[i] >= -100.0 && result[i] <= 0.0,
+                "Value at {} = {} should be in [-100, 0]",
+                i,
+                result[i]
+            );
         }
     }
 
@@ -407,8 +411,11 @@ mod tests {
 
         // At index 4, close = 12.5, highest high over [2,3,4] = max(12.0, 11.5, 12.5) = 12.5
         // %R = -100 × (12.5 - 12.5) / (12.5 - 10.5) = 0
-        assert!(approx_eq(result[4], 0.0, EPSILON),
-            "Expected %R = 0 when close at highest high, got {}", result[4]);
+        assert!(
+            approx_eq(result[4], 0.0, EPSILON),
+            "Expected %R = 0 when close at highest high, got {}",
+            result[4]
+        );
     }
 
     #[test]
@@ -423,8 +430,11 @@ mod tests {
         // At index 4, close = 9.5, highest high = max(12.0, 11.5, 10.5) = 12.0
         // lowest low = min(11.0, 10.5, 9.5) = 9.5
         // %R = -100 × (12.0 - 9.5) / (12.0 - 9.5) = -100
-        assert!(approx_eq(result[4], -100.0, EPSILON),
-            "Expected %R = -100 when close at lowest low, got {}", result[4]);
+        assert!(
+            approx_eq(result[4], -100.0, EPSILON),
+            "Expected %R = -100 when close at lowest low, got {}",
+            result[4]
+        );
     }
 
     #[test]
@@ -438,8 +448,11 @@ mod tests {
 
         // HH = 10, LL = 8, Close = 9 (midpoint)
         // %R = -100 × (10 - 9) / (10 - 8) = -100 × 1/2 = -50
-        assert!(approx_eq(result[2], -50.0, EPSILON),
-            "Expected %R = -50 when close at midpoint, got {}", result[2]);
+        assert!(
+            approx_eq(result[2], -50.0, EPSILON),
+            "Expected %R = -50 when close at midpoint, got {}",
+            result[2]
+        );
     }
 
     #[test]
@@ -452,8 +465,12 @@ mod tests {
         let result = williams_r(&high, &low, &close, 3).unwrap();
 
         for i in 2..result.len() {
-            assert!(approx_eq(result[i], -50.0, EPSILON),
-                "Expected %R = -50 when high == low, got {} at {}", result[i], i);
+            assert!(
+                approx_eq(result[i], -50.0, EPSILON),
+                "Expected %R = -50 when high == low, got {} at {}",
+                result[i],
+                i
+            );
         }
     }
 
@@ -461,15 +478,21 @@ mod tests {
 
     #[test]
     fn test_williams_r_values_in_range() {
-        let high: Vec<f64> = (0..30).map(|i| 100.0 + (i as f64) * 2.0 + 5.0 * ((i as f64) * 0.5).sin()).collect();
+        let high: Vec<f64> = (0..30)
+            .map(|i| 100.0 + (i as f64) * 2.0 + 5.0 * ((i as f64) * 0.5).sin())
+            .collect();
         let low: Vec<f64> = high.iter().map(|h| h - 3.0).collect();
         let close: Vec<f64> = high.iter().map(|h| h - 1.5).collect();
 
         let result = williams_r(&high, &low, &close, 5).unwrap();
 
         for i in 4..result.len() {
-            assert!(result[i] >= -100.0 && result[i] <= 0.0,
-                "%R at {} = {} out of range [-100, 0]", i, result[i]);
+            assert!(
+                result[i] >= -100.0 && result[i] <= 0.0,
+                "%R at {} = {} out of range [-100, 0]",
+                i,
+                result[i]
+            );
         }
     }
 
@@ -492,7 +515,10 @@ mod tests {
         let close = vec![9.5_f64; 10];
 
         let result = williams_r(&high, &low, &close, 0);
-        assert!(matches!(result, Err(Error::InvalidPeriod { period: 0, .. })));
+        assert!(matches!(
+            result,
+            Err(Error::InvalidPeriod { period: 0, .. })
+        ));
     }
 
     #[test]
@@ -569,8 +595,13 @@ mod tests {
         williams_r_into(&high, &low, &close, 3, &mut result2).unwrap();
 
         for i in 0..8 {
-            assert!(approx_eq(result1[i], result2[i], EPSILON),
-                "Mismatch at {}: {} vs {}", i, result1[i], result2[i]);
+            assert!(
+                approx_eq(result1[i], result2[i], EPSILON),
+                "Mismatch at {}: {} vs {}",
+                i,
+                result1[i],
+                result2[i]
+            );
         }
     }
 
@@ -618,8 +649,11 @@ mod tests {
 
             let nan_count = result.iter().filter(|x| x.is_nan()).count();
             let expected = period - 1;
-            assert_eq!(nan_count, expected,
-                "Expected {} NaN values for period {}, got {}", expected, period, nan_count);
+            assert_eq!(
+                nan_count, expected,
+                "Expected {} NaN values for period {}, got {}",
+                expected, period, nan_count
+            );
         }
     }
 
@@ -643,8 +677,12 @@ mod tests {
 
         // In uptrend with close near high, %R should be > -20 (overbought zone)
         for i in 10..result.len() {
-            assert!(result[i] > -30.0,
-                "%R should be elevated in uptrend, got {} at {}", result[i], i);
+            assert!(
+                result[i] > -30.0,
+                "%R should be elevated in uptrend, got {} at {}",
+                result[i],
+                i
+            );
         }
     }
 
@@ -666,8 +704,12 @@ mod tests {
 
         // In downtrend with close near low, %R should be < -70 (oversold zone)
         for i in 10..result.len() {
-            assert!(result[i] < -70.0,
-                "%R should be depressed in downtrend, got {} at {}", result[i], i);
+            assert!(
+                result[i] < -70.0,
+                "%R should be depressed in downtrend, got {} at {}",
+                result[i],
+                i
+            );
         }
     }
 
@@ -681,8 +723,12 @@ mod tests {
         let result = williams_r(&high, &low, &close, 5).unwrap();
 
         for i in 4..result.len() {
-            assert!(approx_eq(result[i], -50.0, EPSILON),
-                "%R should be -50 in range-bound, got {} at {}", result[i], i);
+            assert!(
+                approx_eq(result[i], -50.0, EPSILON),
+                "%R should be -50 in range-bound, got {} at {}",
+                result[i],
+                i
+            );
         }
     }
 }

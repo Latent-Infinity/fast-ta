@@ -297,8 +297,16 @@ fn compute_rsi_core<T: SeriesElement>(data: &[T], period: usize, output: &mut [T
     }
 
     // Calculate initial average gain and loss (SMA seed)
-    let mut avg_gain = if has_nan { T::nan() } else { sum_gain / period_t };
-    let mut avg_loss = if has_nan { T::nan() } else { sum_loss / period_t };
+    let mut avg_gain = if has_nan {
+        T::nan()
+    } else {
+        sum_gain / period_t
+    };
+    let mut avg_loss = if has_nan {
+        T::nan()
+    } else {
+        sum_loss / period_t
+    };
 
     // Calculate first RSI value
     output[period] = if has_nan {
@@ -452,7 +460,9 @@ mod tests {
     #[test]
     fn test_rsi_all_gains() {
         // All price movements are gains - RSI should be 100
-        let data = vec![10.0_f64, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0, 18.0, 19.0, 20.0];
+        let data = vec![
+            10.0_f64, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0, 18.0, 19.0, 20.0,
+        ];
         let result = rsi(&data, 5).unwrap();
 
         // All values after lookback should be 100
@@ -469,7 +479,9 @@ mod tests {
     #[test]
     fn test_rsi_all_losses() {
         // All price movements are losses - RSI should be 0
-        let data = vec![20.0_f64, 19.0, 18.0, 17.0, 16.0, 15.0, 14.0, 13.0, 12.0, 11.0, 10.0];
+        let data = vec![
+            20.0_f64, 19.0, 18.0, 17.0, 16.0, 15.0, 14.0, 13.0, 12.0, 11.0, 10.0,
+        ];
         let result = rsi(&data, 5).unwrap();
 
         // All values after lookback should be 0
@@ -637,7 +649,10 @@ mod tests {
         let data = vec![1.0_f64, 2.0, 3.0];
         let result = rsi(&data, 0);
 
-        assert!(matches!(result, Err(Error::InvalidPeriod { period: 0, .. })));
+        assert!(matches!(
+            result,
+            Err(Error::InvalidPeriod { period: 0, .. })
+        ));
     }
 
     #[test]
@@ -731,7 +746,10 @@ mod tests {
         let mut output = vec![0.0_f64; 3];
         let result = rsi_into(&data, 0, &mut output);
 
-        assert!(matches!(result, Err(Error::InvalidPeriod { period: 0, .. })));
+        assert!(matches!(
+            result,
+            Err(Error::InvalidPeriod { period: 0, .. })
+        ));
     }
 
     #[test]
@@ -803,7 +821,11 @@ mod tests {
             let result = rsi(&data, period).unwrap();
 
             let nan_count = result.iter().filter(|x| x.is_nan()).count();
-            assert_eq!(nan_count, period, "Expected {} NaN values for period {}", period, period);
+            assert_eq!(
+                nan_count, period,
+                "Expected {} NaN values for period {}",
+                period, period
+            );
         }
     }
 
@@ -811,8 +833,8 @@ mod tests {
     fn test_rsi_bounds() {
         // RSI should always be between 0 and 100
         let data: Vec<f64> = vec![
-            50.0, 51.0, 49.0, 52.0, 48.0, 53.0, 47.0, 54.0, 46.0, 55.0,
-            45.0, 56.0, 44.0, 57.0, 43.0, 58.0, 42.0, 59.0, 41.0, 60.0,
+            50.0, 51.0, 49.0, 52.0, 48.0, 53.0, 47.0, 54.0, 46.0, 55.0, 45.0, 56.0, 44.0, 57.0,
+            43.0, 58.0, 42.0, 59.0, 41.0, 60.0,
         ];
         let result = rsi(&data, 5).unwrap();
 
@@ -902,7 +924,7 @@ mod tests {
         // Create data with a spike then flat
         let mut data = vec![50.0_f64; 10];
         data[5] = 60.0; // Spike up
-        // Then flat at 60
+                        // Then flat at 60
         for i in 6..data.len() {
             data[i] = 60.0;
         }

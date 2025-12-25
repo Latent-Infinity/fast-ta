@@ -316,12 +316,7 @@ pub fn true_range_into<T: SeriesElement>(
 /// assert!(result[5] > 0.0); // ATR is always positive
 /// ```
 #[must_use = "this returns a Result with the ATR values, which should be used"]
-pub fn atr<T: SeriesElement>(
-    high: &[T],
-    low: &[T],
-    close: &[T],
-    period: usize,
-) -> Result<Vec<T>> {
+pub fn atr<T: SeriesElement>(high: &[T], low: &[T], close: &[T], period: usize) -> Result<Vec<T>> {
     // Validate inputs
     validate_atr_inputs(high, low, close, period)?;
 
@@ -858,7 +853,10 @@ mod tests {
 
         // The gap at index 3 should inflate the ATR
         // TR[3] = max(105-103, |105-101.5|, |103-101.5|) = max(2, 3.5, 1.5) = 3.5
-        assert!(result[3] > result[4].min(result[5]), "Gap should cause ATR spike");
+        assert!(
+            result[3] > result[4].min(result[5]),
+            "Gap should cause ATR spike"
+        );
     }
 
     // ==================== ATR Wilder Smoothing Tests ====================
@@ -912,7 +910,10 @@ mod tests {
 
         // The spike's effect should still be visible many bars later
         // Normal TR = 1.0, so ATR should be above 1 for a while
-        assert!(result[20] > 1.1, "Wilder smoothing should have memory effect");
+        assert!(
+            result[20] > 1.1,
+            "Wilder smoothing should have memory effect"
+        );
     }
 
     // ==================== ATR Edge Case Tests ====================
@@ -926,7 +927,10 @@ mod tests {
         let result = atr(&high, &low, &close, 3).unwrap();
 
         // NaN should propagate through the calculation
-        assert!(result[3].is_nan(), "ATR should be NaN when input contains NaN");
+        assert!(
+            result[3].is_nan(),
+            "ATR should be NaN when input contains NaN"
+        );
     }
 
     #[test]
@@ -939,7 +943,10 @@ mod tests {
         let result = atr(&high, &low, &close, 3).unwrap();
 
         // ATR should still be positive (it's a measure of range)
-        assert!(result[3] > 0.0, "ATR should be positive even with negative prices");
+        assert!(
+            result[3] > 0.0,
+            "ATR should be positive even with negative prices"
+        );
     }
 
     #[test]
@@ -961,8 +968,12 @@ mod tests {
     #[test]
     fn test_atr_small_values() {
         let high: Vec<f64> = (0..15).map(|i| 1e-10 + (i as f64) * 1e-12).collect();
-        let low: Vec<f64> = (0..15).map(|i| 1e-10 + (i as f64) * 1e-12 - 5e-13).collect();
-        let close: Vec<f64> = (0..15).map(|i| 1e-10 + (i as f64) * 1e-12 - 2e-13).collect();
+        let low: Vec<f64> = (0..15)
+            .map(|i| 1e-10 + (i as f64) * 1e-12 - 5e-13)
+            .collect();
+        let close: Vec<f64> = (0..15)
+            .map(|i| 1e-10 + (i as f64) * 1e-12 - 2e-13)
+            .collect();
 
         let result = atr(&high, &low, &close, 5).unwrap();
 
@@ -1010,7 +1021,10 @@ mod tests {
         let close = vec![9.5_f64; 10];
 
         let result = atr(&high, &low, &close, 0);
-        assert!(matches!(result, Err(Error::InvalidPeriod { period: 0, .. })));
+        assert!(matches!(
+            result,
+            Err(Error::InvalidPeriod { period: 0, .. })
+        ));
     }
 
     #[test]
@@ -1092,7 +1106,10 @@ mod tests {
         let second_atr = output[4];
 
         // Second set has higher volatility, so ATR should be higher
-        assert!(second_atr > first_atr, "Higher volatility should give higher ATR");
+        assert!(
+            second_atr > first_atr,
+            "Higher volatility should give higher ATR"
+        );
     }
 
     #[test]
@@ -1215,12 +1232,7 @@ mod tests {
 
         for (i, &val) in result.iter().enumerate() {
             if !val.is_nan() {
-                assert!(
-                    val >= 0.0,
-                    "ATR at index {} should be >= 0, got {}",
-                    i,
-                    val
-                );
+                assert!(val >= 0.0, "ATR at index {} should be >= 0, got {}", i, val);
             }
         }
     }
@@ -1228,15 +1240,24 @@ mod tests {
     #[test]
     fn test_atr_bounded_by_max_true_range() {
         // ATR should not exceed the maximum True Range in the lookback window
-        let high = vec![100.0_f64, 101.0, 102.0, 103.0, 104.0, 200.0, 106.0, 107.0, 108.0, 109.0];
-        let low = vec![99.0, 100.0, 101.0, 102.0, 103.0, 50.0, 105.0, 106.0, 107.0, 108.0];
-        let close = vec![99.5, 100.5, 101.5, 102.5, 103.5, 150.0, 105.5, 106.5, 107.5, 108.5];
+        let high = vec![
+            100.0_f64, 101.0, 102.0, 103.0, 104.0, 200.0, 106.0, 107.0, 108.0, 109.0,
+        ];
+        let low = vec![
+            99.0, 100.0, 101.0, 102.0, 103.0, 50.0, 105.0, 106.0, 107.0, 108.0,
+        ];
+        let close = vec![
+            99.5, 100.5, 101.5, 102.5, 103.5, 150.0, 105.5, 106.5, 107.5, 108.5,
+        ];
 
         let result = atr(&high, &low, &close, 3).unwrap();
 
         // At index 6 (after the huge spike at 5), ATR should be elevated but reasonable
         // The spike TR = max(200-50, |200-103.5|, |50-103.5|) = max(150, 96.5, 53.5) = 150
-        assert!(result[6] < 150.0, "ATR should be smoothed, not equal to max TR");
+        assert!(
+            result[6] < 150.0,
+            "ATR should be smoothed, not equal to max TR"
+        );
         assert!(result[6] > 1.0, "ATR should be elevated from the spike");
     }
 
@@ -1340,6 +1361,9 @@ mod tests {
 
         assert!(spike_effect > pre_spike, "ATR should spike");
         assert!(post_spike < spike_effect, "ATR should decay after spike");
-        assert!(post_spike > pre_spike * 0.9, "Some memory effect should remain");
+        assert!(
+            post_spike > pre_spike * 0.9,
+            "Some memory effect should remain"
+        );
     }
 }

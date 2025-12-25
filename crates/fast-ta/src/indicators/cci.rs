@@ -1,0 +1,396 @@
+//! CCI (Commodity Channel Index) indicator.
+//!
+//! The Commodity Channel Index measures the deviation of an asset's price
+//! from its statistical mean, helping identify cyclical trends.
+//!
+//! # Formula
+//!
+//! ```text
+//! Typical Price = (High + Low + Close) / 3
+//! CCI = (TP - SMA(TP, period)) / (0.015 * Mean Deviation)
+//! ```
+//!
+//! Where Mean Deviation is the average absolute deviation from the SMA.
+//!
+//! # Interpretation
+//!
+//! - CCI > +100: Overbought, potential selling opportunity
+//! - CCI < -100: Oversold, potential buying opportunity
+//! - Zero-line crossovers can signal trend changes
+//!
+//! # Lookback
+//!
+//! The lookback period is `period - 1`.
+
+use crate::error::{Error, Result};
+use crate::traits::SeriesElement;
+
+/// Computes the lookback period for CCI.
+#[inline]
+#[must_use]
+pub const fn cci_lookback(period: usize) -> usize {
+    if period == 0 {
+        0
+    } else {
+        period - 1
+    }
+}
+
+/// Returns the minimum input length required for CCI calculation.
+#[inline]
+#[must_use]
+pub const fn cci_min_len(period: usize) -> usize {
+    period
+}
+
+/// Computes CCI and stores results in output slice.
+///
+/// # Arguments
+///
+/// * `high` - High prices
+/// * `low` - Low prices
+/// * `close` - Close prices
+/// * `period` - Lookback period (typically 20)
+/// * `output` - Pre-allocated output slice
+///
+/// # Errors
+///
+/// Returns an error if:
+/// - The input arrays are empty (`Error::EmptyInput`)
+/// - The input arrays have different lengths (`Error::LengthMismatch`)
+/// - The period is invalid (`Error::InvalidPeriod`)
+/// - There is insufficient data for the lookback (`Error::InsufficientData`)
+/// - The output buffer is too small (`Error::BufferTooSmall`)
+pub fn cci_into<T: SeriesElement>(
+    high: &[T],
+    low: &[T],
+    close: &[T],
+    period: usize,
+    output: &mut [T],
+) -> Result<()> {
+    let n = high.len();
+
+    if n == 0 {
+        return Err(Error::EmptyInput);
+    }
+
+    if low.len() != n || close.len() != n {
+        return Err(Error::LengthMismatch {
+            description: format!(
+                "HLC arrays must have same length: high={}, low={}, close={}",
+                n,
+                low.len(),
+                close.len()
+            ),
+        });
+    }
+
+    if period == 0 {
+        return Err(Error::InvalidPeriod {
+            period,
+            reason: "period must be at least 1",
+        });
+    }
+
+    let min_len = cci_min_len(period);
+    if n < min_len {
+        return Err(Error::InsufficientData {
+            indicator: "cci",
+            required: min_len,
+            actual: n,
+        });
+    }
+
+    if output.len() < n {
+        return Err(Error::BufferTooSmall {
+            indicator: "cci",
+            required: n,
+            actual: output.len(),
+        });
+    }
+
+    let lookback = cci_lookback(period);
+    let period_t = T::from_usize(period)?;
+    let three = T::from_f64(3.0)?;
+    let constant = T::from_f64(0.015)?;
+
+    // Calculate typical prices
+    let mut tp = vec![T::zero(); n];
+    for i in 0..n {
+        tp[i] = (high[i] + low[i] + close[i]) / three;
+    }
+
+    // Fill lookback period with NaN
+    for i in 0..lookback {
+        output[i] = T::nan();
+    }
+
+    // Calculate CCI for each bar after lookback
+    for i in lookback..n {
+        let start = i + 1 - period;
+        let end = i + 1;
+
+        // Calculate SMA of typical prices
+        let mut tp_sum = T::zero();
+        for j in start..end {
+            tp_sum = tp_sum + tp[j];
+        }
+        let tp_sma = tp_sum / period_t;
+
+        // Calculate mean deviation
+        let mut deviation_sum = T::zero();
+        for j in start..end {
+            let diff = tp[j] - tp_sma;
+            // Absolute value
+            deviation_sum = deviation_sum
+                + if diff >= T::zero() {
+                    diff
+                } else {
+                    T::zero() - diff
+                };
+        }
+        let mean_deviation = deviation_sum / period_t;
+
+        // CCI = (TP - SMA) / (0.015 * Mean Deviation)
+        let denominator = constant * mean_deviation;
+        if denominator == T::zero() {
+            output[i] = T::zero();
+        } else {
+            output[i] = (tp[i] - tp_sma) / denominator;
+        }
+    }
+
+    Ok(())
+}
+
+/// Computes CCI (Commodity Channel Index).
+///
+/// # Arguments
+///
+/// * `high` - High prices
+/// * `low` - Low prices
+/// * `close` - Close prices
+/// * `period` - Lookback period (typically 20)
+///
+/// # Returns
+///
+/// * `Ok(Vec<T>)` - CCI values (typically ranges from -300 to +300)
+/// * `Err(Error)` if inputs are invalid
+///
+/// # Example
+///
+/// ```
+/// use fast_ta::indicators::cci;
+///
+/// let high = vec![25.0_f64, 26.0, 27.0, 28.0, 27.5, 27.0, 26.5, 26.0, 25.5, 25.0];
+/// let low = vec![23.0_f64, 24.0, 25.0, 26.0, 25.5, 25.0, 24.5, 24.0, 23.5, 23.0];
+/// let close = vec![24.0_f64, 25.0, 26.0, 27.0, 26.5, 26.0, 25.5, 25.0, 24.5, 24.0];
+///
+/// let result = cci(&high, &low, &close, 5).unwrap();
+/// // First 4 values are NaN (lookback = period - 1)
+/// assert!(result[4].is_finite());
+/// ```
+///
+/// # Errors
+///
+/// Returns an error if:
+/// - The input arrays are empty (`Error::EmptyInput`)
+/// - The input arrays have different lengths (`Error::LengthMismatch`)
+/// - The period is invalid (`Error::InvalidPeriod`)
+/// - There is insufficient data for the lookback (`Error::InsufficientData`)
+pub fn cci<T: SeriesElement>(high: &[T], low: &[T], close: &[T], period: usize) -> Result<Vec<T>> {
+    let mut output = vec![T::zero(); high.len()];
+    cci_into(high, low, close, period, &mut output)?;
+    Ok(output)
+}
+
+#[cfg(test)]
+mod tests {
+    #![allow(clippy::all, clippy::pedantic, clippy::nursery)]
+    use super::*;
+
+    #[test]
+    fn test_cci_lookback() {
+        assert_eq!(cci_lookback(1), 0);
+        assert_eq!(cci_lookback(14), 13);
+        assert_eq!(cci_lookback(20), 19);
+    }
+
+    #[test]
+    fn test_cci_min_len() {
+        assert_eq!(cci_min_len(1), 1);
+        assert_eq!(cci_min_len(14), 14);
+        assert_eq!(cci_min_len(20), 20);
+    }
+
+    #[test]
+    fn test_cci_empty_input() {
+        let high: Vec<f64> = vec![];
+        let low: Vec<f64> = vec![];
+        let close: Vec<f64> = vec![];
+        let result = cci(&high, &low, &close, 5);
+        assert!(matches!(result, Err(Error::EmptyInput)));
+    }
+
+    #[test]
+    fn test_cci_invalid_period() {
+        let high: Vec<f64> = vec![10.0, 11.0, 12.0, 13.0, 14.0];
+        let low: Vec<f64> = vec![9.0, 10.0, 11.0, 12.0, 13.0];
+        let close: Vec<f64> = vec![9.5, 10.5, 11.5, 12.5, 13.5];
+        let result = cci(&high, &low, &close, 0);
+        assert!(matches!(result, Err(Error::InvalidPeriod { .. })));
+    }
+
+    #[test]
+    fn test_cci_insufficient_data() {
+        let high: Vec<f64> = vec![10.0, 11.0, 12.0];
+        let low: Vec<f64> = vec![9.0, 10.0, 11.0];
+        let close: Vec<f64> = vec![9.5, 10.5, 11.5];
+        let result = cci(&high, &low, &close, 5);
+        assert!(matches!(result, Err(Error::InsufficientData { .. })));
+    }
+
+    #[test]
+    fn test_cci_length_mismatch() {
+        let high: Vec<f64> = vec![10.0, 11.0, 12.0, 13.0, 14.0];
+        let low: Vec<f64> = vec![9.0, 10.0, 11.0];
+        let close: Vec<f64> = vec![9.5, 10.5, 11.5, 12.5, 13.5];
+        let result = cci(&high, &low, &close, 5);
+        assert!(matches!(result, Err(Error::LengthMismatch { .. })));
+    }
+
+    #[test]
+    fn test_cci_output_length() {
+        let high: Vec<f64> = vec![10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0, 18.0, 19.0];
+        let low: Vec<f64> = vec![9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0, 18.0];
+        let close: Vec<f64> = vec![9.5, 10.5, 11.5, 12.5, 13.5, 14.5, 15.5, 16.5, 17.5, 18.5];
+        let result = cci(&high, &low, &close, 5).unwrap();
+        assert_eq!(result.len(), high.len());
+    }
+
+    #[test]
+    fn test_cci_lookback_nan() {
+        let high: Vec<f64> = vec![10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0, 18.0, 19.0];
+        let low: Vec<f64> = vec![9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0, 18.0];
+        let close: Vec<f64> = vec![9.5, 10.5, 11.5, 12.5, 13.5, 14.5, 15.5, 16.5, 17.5, 18.5];
+        let result = cci(&high, &low, &close, 5).unwrap();
+
+        // First 4 values should be NaN (lookback = period - 1 = 4)
+        for i in 0..4 {
+            assert!(result[i].is_nan(), "cci[{}] should be NaN", i);
+        }
+
+        // Values after lookback should be finite
+        for i in 4..result.len() {
+            assert!(result[i].is_finite(), "cci[{}] should be finite", i);
+        }
+    }
+
+    #[test]
+    fn test_cci_constant_prices() {
+        // When prices are constant, CCI should be 0 (or near 0)
+        let high: Vec<f64> = vec![10.0; 10];
+        let low: Vec<f64> = vec![10.0; 10];
+        let close: Vec<f64> = vec![10.0; 10];
+        let result = cci(&high, &low, &close, 5).unwrap();
+
+        // All non-NaN values should be 0 when prices are constant
+        for i in 4..result.len() {
+            assert!(
+                (result[i] - 0.0).abs() < 1e-10,
+                "cci[{}] should be 0 for constant prices",
+                i
+            );
+        }
+    }
+
+    #[test]
+    fn test_cci_uptrend() {
+        // In a strong uptrend, CCI should be positive
+        let high: Vec<f64> = vec![10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0, 18.0, 19.0];
+        let low: Vec<f64> = vec![9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0, 18.0];
+        let close: Vec<f64> = vec![9.5, 10.5, 11.5, 12.5, 13.5, 14.5, 15.5, 16.5, 17.5, 18.5];
+        let result = cci(&high, &low, &close, 5).unwrap();
+
+        // In uptrend, later CCI values should be positive
+        for i in 4..result.len() {
+            assert!(
+                result[i] > 0.0,
+                "cci[{}] = {} should be positive in uptrend",
+                i,
+                result[i]
+            );
+        }
+    }
+
+    #[test]
+    fn test_cci_downtrend() {
+        // In a strong downtrend, CCI should be negative
+        let high: Vec<f64> = vec![19.0, 18.0, 17.0, 16.0, 15.0, 14.0, 13.0, 12.0, 11.0, 10.0];
+        let low: Vec<f64> = vec![18.0, 17.0, 16.0, 15.0, 14.0, 13.0, 12.0, 11.0, 10.0, 9.0];
+        let close: Vec<f64> = vec![18.5, 17.5, 16.5, 15.5, 14.5, 13.5, 12.5, 11.5, 10.5, 9.5];
+        let result = cci(&high, &low, &close, 5).unwrap();
+
+        // In downtrend, later CCI values should be negative
+        for i in 4..result.len() {
+            assert!(
+                result[i] < 0.0,
+                "cci[{}] = {} should be negative in downtrend",
+                i,
+                result[i]
+            );
+        }
+    }
+
+    #[test]
+    fn test_cci_into() {
+        let high: Vec<f64> = vec![10.0, 11.0, 12.0, 13.0, 14.0];
+        let low: Vec<f64> = vec![9.0, 10.0, 11.0, 12.0, 13.0];
+        let close: Vec<f64> = vec![9.5, 10.5, 11.5, 12.5, 13.5];
+        let mut output = vec![0.0_f64; 5];
+
+        cci_into(&high, &low, &close, 5, &mut output).unwrap();
+
+        // Check that result is finite at last position
+        assert!(output[4].is_finite());
+    }
+
+    #[test]
+    fn test_cci_into_buffer_too_small() {
+        let high: Vec<f64> = vec![10.0, 11.0, 12.0, 13.0, 14.0];
+        let low: Vec<f64> = vec![9.0, 10.0, 11.0, 12.0, 13.0];
+        let close: Vec<f64> = vec![9.5, 10.5, 11.5, 12.5, 13.5];
+        let mut output = vec![0.0_f64; 3]; // Too small
+
+        let result = cci_into(&high, &low, &close, 5, &mut output);
+        assert!(matches!(result, Err(Error::BufferTooSmall { .. })));
+    }
+
+    #[test]
+    fn test_cci_f32() {
+        let high: Vec<f32> = vec![10.0, 11.0, 12.0, 13.0, 14.0];
+        let low: Vec<f32> = vec![9.0, 10.0, 11.0, 12.0, 13.0];
+        let close: Vec<f32> = vec![9.5, 10.5, 11.5, 12.5, 13.5];
+        let result = cci(&high, &low, &close, 5).unwrap();
+
+        assert!(result[4].is_finite());
+    }
+
+    #[test]
+    fn test_cci_period_1() {
+        // With period 1, CCI depends on a single bar
+        let high: Vec<f64> = vec![10.0, 11.0, 12.0, 13.0, 14.0];
+        let low: Vec<f64> = vec![9.0, 10.0, 11.0, 12.0, 13.0];
+        let close: Vec<f64> = vec![9.5, 10.5, 11.5, 12.5, 13.5];
+        let result = cci(&high, &low, &close, 1).unwrap();
+
+        // With period 1, SMA = current TP, so deviation = 0, so CCI = 0
+        for i in 0..result.len() {
+            assert!(
+                (result[i] - 0.0).abs() < 1e-10,
+                "cci[{}] should be 0 with period 1",
+                i
+            );
+        }
+    }
+}

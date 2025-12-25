@@ -25,9 +25,9 @@
 //!
 //! # NaN Handling
 //!
-//! - If close[i] or close[i-1] is NaN, OBV remains unchanged from previous value
-//! - If volume[i] is NaN, OBV remains unchanged from previous value
-//! - The first value is always volume[0] (no lookback period)
+//! - If `close[i]` or `close[i-1]` is NaN, OBV remains unchanged from previous value
+//! - If `volume[i]` is NaN, OBV remains unchanged from previous value
+//! - The first value is always `volume[0]` (no lookback period)
 //!
 //! # Example
 //!
@@ -383,8 +383,8 @@ mod tests {
 
         // All up days: OBV = cumsum(volume)
         assert!(approx_eq(result[0], 100.0, EPSILON));
-        assert!(approx_eq(result[1], 300.0, EPSILON));  // 100 + 200
-        assert!(approx_eq(result[2], 600.0, EPSILON));  // 300 + 300
+        assert!(approx_eq(result[1], 300.0, EPSILON)); // 100 + 200
+        assert!(approx_eq(result[2], 600.0, EPSILON)); // 300 + 300
         assert!(approx_eq(result[3], 1000.0, EPSILON)); // 600 + 400
     }
 
@@ -398,9 +398,9 @@ mod tests {
 
         // All down days: OBV = volume[0] - cumsum(volume[1:])
         assert!(approx_eq(result[0], 100.0, EPSILON));
-        assert!(approx_eq(result[1], -100.0, EPSILON));  // 100 - 200
-        assert!(approx_eq(result[2], -400.0, EPSILON));  // -100 - 300
-        assert!(approx_eq(result[3], -800.0, EPSILON));  // -400 - 400
+        assert!(approx_eq(result[1], -100.0, EPSILON)); // 100 - 200
+        assert!(approx_eq(result[2], -400.0, EPSILON)); // -100 - 300
+        assert!(approx_eq(result[3], -800.0, EPSILON)); // -400 - 400
     }
 
     #[test]
@@ -428,10 +428,10 @@ mod tests {
 
         // Alternating: +100, -100, +100, -100
         assert!(approx_eq(result[0], 100.0, EPSILON));
-        assert!(approx_eq(result[1], 200.0, EPSILON));  // 100 + 100
-        assert!(approx_eq(result[2], 100.0, EPSILON));  // 200 - 100
-        assert!(approx_eq(result[3], 200.0, EPSILON));  // 100 + 100
-        assert!(approx_eq(result[4], 100.0, EPSILON));  // 200 - 100
+        assert!(approx_eq(result[1], 200.0, EPSILON)); // 100 + 100
+        assert!(approx_eq(result[2], 100.0, EPSILON)); // 200 - 100
+        assert!(approx_eq(result[3], 200.0, EPSILON)); // 100 + 100
+        assert!(approx_eq(result[4], 100.0, EPSILON)); // 200 - 100
     }
 
     // ==================== Error Handling Tests ====================
@@ -466,7 +466,7 @@ mod tests {
 
         assert!(approx_eq(result[0], 100.0, EPSILON));
         assert!(approx_eq(result[1], 100.0, EPSILON)); // Unchanged due to NaN
-        // The next comparison uses NaN as prev_close, so OBV stays unchanged
+                                                       // The next comparison uses NaN as prev_close, so OBV stays unchanged
         assert!(approx_eq(result[2], 100.0, EPSILON));
     }
 
@@ -524,7 +524,9 @@ mod tests {
     #[test]
     fn test_obv_and_obv_into_produce_same_result() {
         let close = vec![10.0_f64, 10.5, 10.2, 10.8, 10.5, 11.0, 10.8, 11.2];
-        let volume = vec![1000.0, 1500.0, 1200.0, 1800.0, 1100.0, 1600.0, 1300.0, 1700.0];
+        let volume = vec![
+            1000.0, 1500.0, 1200.0, 1800.0, 1100.0, 1600.0, 1300.0, 1700.0,
+        ];
 
         let result1 = obv(&close, &volume).unwrap();
 
@@ -532,8 +534,13 @@ mod tests {
         obv_into(&close, &volume, &mut output).unwrap();
 
         for i in 0..8 {
-            assert!(approx_eq(result1[i], output[i], EPSILON),
-                "Mismatch at {}: {} vs {}", i, result1[i], output[i]);
+            assert!(
+                approx_eq(result1[i], output[i], EPSILON),
+                "Mismatch at {}: {} vs {}",
+                i,
+                result1[i],
+                output[i]
+            );
         }
     }
 
@@ -572,8 +579,12 @@ mod tests {
         let result = obv(&close, &volume).unwrap();
 
         for i in 1..result.len() {
-            assert!(result[i] > result[i - 1],
-                "OBV should increase in up market: {} > {}", result[i], result[i - 1]);
+            assert!(
+                result[i] > result[i - 1],
+                "OBV should increase in up market: {} > {}",
+                result[i],
+                result[i - 1]
+            );
         }
     }
 
@@ -586,8 +597,12 @@ mod tests {
         let result = obv(&close, &volume).unwrap();
 
         for i in 1..result.len() {
-            assert!(result[i] < result[i - 1],
-                "OBV should decrease in down market: {} < {}", result[i], result[i - 1]);
+            assert!(
+                result[i] < result[i - 1],
+                "OBV should decrease in down market: {} < {}",
+                result[i],
+                result[i - 1]
+            );
         }
     }
 
@@ -607,8 +622,12 @@ mod tests {
         let first_avg = (result[0] + result[1] + result[2]) / 3.0;
         let last_avg = (result[5] + result[6] + result[7]) / 3.0;
 
-        assert!(last_avg > first_avg,
-            "OBV should trend up during accumulation: {} > {}", last_avg, first_avg);
+        assert!(
+            last_avg > first_avg,
+            "OBV should trend up during accumulation: {} > {}",
+            last_avg,
+            first_avg
+        );
     }
 
     #[test]
@@ -623,8 +642,12 @@ mod tests {
         let first_avg = (result[0] + result[1] + result[2]) / 3.0;
         let last_avg = (result[5] + result[6] + result[7]) / 3.0;
 
-        assert!(last_avg < first_avg,
-            "OBV should trend down during distribution: {} < {}", last_avg, first_avg);
+        assert!(
+            last_avg < first_avg,
+            "OBV should trend down during distribution: {} < {}",
+            last_avg,
+            first_avg
+        );
     }
 
     #[test]
@@ -641,9 +664,12 @@ mod tests {
         let early_obv_increase = result[2] - result[0];
         let late_obv_increase = result[5] - result[3];
 
-        assert!(early_obv_increase > late_obv_increase,
+        assert!(
+            early_obv_increase > late_obv_increase,
             "Early OBV gains should exceed late gains: {} > {}",
-            early_obv_increase, late_obv_increase);
+            early_obv_increase,
+            late_obv_increase
+        );
     }
 
     #[test]

@@ -356,7 +356,9 @@ mod tests {
         let result = data.validate_min_length(5, "test");
         assert!(result.is_err());
         match result {
-            Err(Error::InsufficientData { required, actual, .. }) => {
+            Err(Error::InsufficientData {
+                required, actual, ..
+            }) => {
                 assert_eq!(required, 5);
                 assert_eq!(actual, 3);
             }

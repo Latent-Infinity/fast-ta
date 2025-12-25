@@ -172,7 +172,11 @@ impl<T: SeriesElement> MacdOutput<T> {
     ///
     /// This is `slow_period - 1 + signal_period - 1`.
     #[must_use]
-    pub const fn first_valid_signal_index(&self, slow_period: usize, signal_period: usize) -> usize {
+    pub const fn first_valid_signal_index(
+        &self,
+        slow_period: usize,
+        signal_period: usize,
+    ) -> usize {
         slow_period - 1 + signal_period - 1
     }
 }
@@ -212,7 +216,10 @@ impl<T: SeriesElement> MacdOutput<T> {
 /// ```
 /// use fast_ta::indicators::macd::macd;
 ///
-/// let data: Vec<f64> = (0..50).map(|i| 100.0 + (i as f64) * 0.5).collect();
+/// let mut data: Vec<f64> = Vec::with_capacity(50);
+/// for i in 0..50 {
+///     data.push(100.0 + (i as f64) * 0.5);
+/// }
 /// let result = macd(&data, 12, 26, 9).unwrap();
 ///
 /// // Standard interpretation:
@@ -291,7 +298,10 @@ pub fn macd<T: SeriesElement>(
 /// ```
 /// use fast_ta::indicators::macd::macd_into;
 ///
-/// let data: Vec<f64> = (0..50).map(|i| 100.0 + (i as f64) * 0.5).collect();
+/// let mut data: Vec<f64> = Vec::with_capacity(50);
+/// for i in 0..50 {
+///     data.push(100.0 + (i as f64) * 0.5);
+/// }
 /// let mut macd_line = vec![0.0_f64; 50];
 /// let mut signal_line = vec![0.0_f64; 50];
 /// let mut histogram = vec![0.0_f64; 50];
@@ -542,7 +552,7 @@ fn compute_macd_fused<T: SeriesElement>(
 
 /// Validates MACD inputs.
 #[inline]
-fn validate_macd_inputs<T: SeriesElement>(
+const fn validate_macd_inputs<T: SeriesElement>(
     data: &[T],
     fast_period: usize,
     slow_period: usize,
@@ -789,7 +799,11 @@ mod tests {
 
         // First slow_period - 1 = 25 MACD values should be NaN
         for i in 0..25 {
-            assert!(result.macd_line[i].is_nan(), "MACD line at {} should be NaN", i);
+            assert!(
+                result.macd_line[i].is_nan(),
+                "MACD line at {} should be NaN",
+                i
+            );
         }
 
         // First valid MACD at index 25
@@ -797,7 +811,11 @@ mod tests {
 
         // First slow_period + signal_period - 2 = 33 signal values should be NaN
         for i in 0..33 {
-            assert!(result.signal_line[i].is_nan(), "Signal line at {} should be NaN", i);
+            assert!(
+                result.signal_line[i].is_nan(),
+                "Signal line at {} should be NaN",
+                i
+            );
         }
 
         // First valid signal at index 33
@@ -805,7 +823,11 @@ mod tests {
 
         // Histogram should have same NaN pattern as signal
         for i in 0..33 {
-            assert!(result.histogram[i].is_nan(), "Histogram at {} should be NaN", i);
+            assert!(
+                result.histogram[i].is_nan(),
+                "Histogram at {} should be NaN",
+                i
+            );
         }
         assert!(!result.histogram[33].is_nan());
     }
@@ -982,7 +1004,10 @@ mod tests {
             }
         }
 
-        assert!(found_positive || found_negative, "Histogram should change sign with trend reversal");
+        assert!(
+            found_positive || found_negative,
+            "Histogram should change sign with trend reversal"
+        );
     }
 
     // ==================== Reference Value Tests ====================
@@ -1073,7 +1098,10 @@ mod tests {
         let data = vec![1.0_f64; 50];
         let result = macd(&data, 0, 26, 9);
 
-        assert!(matches!(result, Err(Error::InvalidPeriod { period: 0, .. })));
+        assert!(matches!(
+            result,
+            Err(Error::InvalidPeriod { period: 0, .. })
+        ));
     }
 
     #[test]
@@ -1081,7 +1109,10 @@ mod tests {
         let data = vec![1.0_f64; 50];
         let result = macd(&data, 12, 0, 9);
 
-        assert!(matches!(result, Err(Error::InvalidPeriod { period: 0, .. })));
+        assert!(matches!(
+            result,
+            Err(Error::InvalidPeriod { period: 0, .. })
+        ));
     }
 
     #[test]
@@ -1089,7 +1120,10 @@ mod tests {
         let data = vec![1.0_f64; 50];
         let result = macd(&data, 12, 26, 0);
 
-        assert!(matches!(result, Err(Error::InvalidPeriod { period: 0, .. })));
+        assert!(matches!(
+            result,
+            Err(Error::InvalidPeriod { period: 0, .. })
+        ));
     }
 
     #[test]
@@ -1135,9 +1169,15 @@ mod tests {
         let mut histogram = vec![0.0_f64; 50];
 
         let (valid_macd, valid_signal) = macd_into(
-            &data, 12, 26, 9,
-            &mut macd_line, &mut signal_line, &mut histogram
-        ).unwrap();
+            &data,
+            12,
+            26,
+            9,
+            &mut macd_line,
+            &mut signal_line,
+            &mut histogram,
+        )
+        .unwrap();
 
         assert_eq!(valid_macd, 25); // 50 - 25 = 25
         assert_eq!(valid_signal, 17); // 50 - 33 = 17
@@ -1159,10 +1199,28 @@ mod tests {
         let mut signal_line = vec![0.0_f64; 50];
         let mut histogram = vec![0.0_f64; 50];
 
-        macd_into(&data1, 5, 10, 3, &mut macd_line, &mut signal_line, &mut histogram).unwrap();
+        macd_into(
+            &data1,
+            5,
+            10,
+            3,
+            &mut macd_line,
+            &mut signal_line,
+            &mut histogram,
+        )
+        .unwrap();
         let first_macd = macd_line[15];
 
-        macd_into(&data2, 5, 10, 3, &mut macd_line, &mut signal_line, &mut histogram).unwrap();
+        macd_into(
+            &data2,
+            5,
+            10,
+            3,
+            &mut macd_line,
+            &mut signal_line,
+            &mut histogram,
+        )
+        .unwrap();
         let second_macd = macd_line[15];
 
         // First (uptrend) should give positive MACD, second (downtrend) should give negative
@@ -1177,7 +1235,15 @@ mod tests {
         let mut signal_line = vec![0.0_f64; 50];
         let mut histogram = vec![0.0_f64; 50];
 
-        let result = macd_into(&data, 5, 10, 3, &mut macd_line, &mut signal_line, &mut histogram);
+        let result = macd_into(
+            &data,
+            5,
+            10,
+            3,
+            &mut macd_line,
+            &mut signal_line,
+            &mut histogram,
+        );
 
         assert!(matches!(result, Err(Error::BufferTooSmall { .. })));
     }
@@ -1190,9 +1256,15 @@ mod tests {
         let mut histogram = vec![0.0_f32; 50];
 
         let (valid_macd, valid_signal) = macd_into(
-            &data, 5, 10, 3,
-            &mut macd_line, &mut signal_line, &mut histogram
-        ).unwrap();
+            &data,
+            5,
+            10,
+            3,
+            &mut macd_line,
+            &mut signal_line,
+            &mut histogram,
+        )
+        .unwrap();
 
         assert_eq!(valid_macd, 41); // 50 - 9 = 41
         assert_eq!(valid_signal, 39); // 50 - 11 = 39
@@ -1208,7 +1280,16 @@ mod tests {
         let mut macd_line = vec![0.0_f64; 60];
         let mut signal_line = vec![0.0_f64; 60];
         let mut histogram = vec![0.0_f64; 60];
-        macd_into(&data, 12, 26, 9, &mut macd_line, &mut signal_line, &mut histogram).unwrap();
+        macd_into(
+            &data,
+            12,
+            26,
+            9,
+            &mut macd_line,
+            &mut signal_line,
+            &mut histogram,
+        )
+        .unwrap();
 
         for i in 0..60 {
             assert!(
@@ -1255,16 +1336,22 @@ mod tests {
 
             // MACD NaN count should be slow_period - 1
             assert_eq!(
-                macd_nan_count, slow - 1,
+                macd_nan_count,
+                slow - 1,
                 "MACD NaN count for ({}, {}, {})",
-                fast, slow, signal
+                fast,
+                slow,
+                signal
             );
 
             // Signal NaN count should be slow_period + signal_period - 2
             assert_eq!(
-                signal_nan_count, slow + signal - 2,
+                signal_nan_count,
+                slow + signal - 2,
                 "Signal NaN count for ({}, {}, {})",
-                fast, slow, signal
+                fast,
+                slow,
+                signal
             );
         }
     }
@@ -1325,7 +1412,11 @@ mod tests {
 
         for i in 0..result.len() {
             assert!(approx_eq(result.macd_line[i], cloned.macd_line[i], EPSILON));
-            assert!(approx_eq(result.signal_line[i], cloned.signal_line[i], EPSILON));
+            assert!(approx_eq(
+                result.signal_line[i],
+                cloned.signal_line[i],
+                EPSILON
+            ));
             assert!(approx_eq(result.histogram[i], cloned.histogram[i], EPSILON));
         }
     }
@@ -1356,7 +1447,10 @@ mod tests {
             }
         }
 
-        assert!(found_positive, "Should find positive histogram during uptrend");
+        assert!(
+            found_positive,
+            "Should find positive histogram during uptrend"
+        );
     }
 
     #[test]
@@ -1383,17 +1477,19 @@ mod tests {
             }
         }
 
-        assert!(found_negative, "Should find negative histogram during downtrend");
+        assert!(
+            found_negative,
+            "Should find negative histogram during downtrend"
+        );
     }
 
     #[test]
     fn test_macd_divergence_scenario() {
         // Simulate price making higher highs but MACD making lower highs (bearish divergence setup)
         let data: Vec<f64> = vec![
-            50.0, 51.0, 52.0, 53.0, 54.0, 55.0, 56.0, 57.0, 58.0, 59.0,
-            60.0, 61.0, 62.0, 63.0, 64.0, 65.0, 66.0, 67.0, 68.0, 69.0,
-            70.0, 69.5, 70.0, 69.0, 70.5, 68.5, 71.0, 68.0, 71.5, 67.5,
-            72.0, 67.0, 72.5, 66.5, 73.0, 66.0, 73.5, 65.5, 74.0, 65.0,
+            50.0, 51.0, 52.0, 53.0, 54.0, 55.0, 56.0, 57.0, 58.0, 59.0, 60.0, 61.0, 62.0, 63.0,
+            64.0, 65.0, 66.0, 67.0, 68.0, 69.0, 70.0, 69.5, 70.0, 69.0, 70.5, 68.5, 71.0, 68.0,
+            71.5, 67.5, 72.0, 67.0, 72.5, 66.5, 73.0, 66.0, 73.5, 65.5, 74.0, 65.0,
         ];
 
         let result = macd(&data, 5, 10, 3).unwrap();

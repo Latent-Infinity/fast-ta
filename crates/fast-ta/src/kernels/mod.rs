@@ -5,7 +5,7 @@
 //!
 //! # Kernels
 //!
-//! - [`rolling_extrema`]: Monotonic deque algorithm for O(n) rolling max/min
+//! - [`mod@rolling_extrema`]: Monotonic deque algorithm for O(n) rolling max/min
 //!
 //! # Performance
 //!

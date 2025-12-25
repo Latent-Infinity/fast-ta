@@ -35,10 +35,31 @@ use crate::error::{CliError, Result};
 /// fast-ta: High-performance technical analysis CLI
 #[derive(Parser, Debug)]
 #[command(name = "fast-ta")]
-#[command(author, version, about = "High-performance technical analysis indicators")]
-#[command(long_about = "fast-ta provides fast, accurate technical analysis indicator \
+#[command(
+    author,
+    version,
+    about = "High-performance technical analysis indicators"
+)]
+#[command(
+    long_about = "fast-ta provides fast, accurate technical analysis indicator \
     computation for financial data. Input is read from CSV files and output can be \
-    written to files or stdout.")]
+    written to files or stdout."
+)]
+#[command(after_help = "\
+EXIT CODES:
+    0    Success - computation completed successfully
+    1    Argument error - invalid parameters or unknown command
+    2    Data error - file not found, permission denied, or CSV parse error
+    3    Computation error - indicator calculation failed (e.g., insufficient data)
+
+EXAMPLES:
+    fast-ta sma prices.csv 20          # Simple Moving Average (period 20)
+    fast-ta ema prices.csv 12 -o out.csv   # EMA with output file
+    fast-ta rsi prices.csv             # RSI with default period (14)
+    fast-ta macd prices.csv 12,26,9    # MACD with custom periods
+    fast-ta bollinger prices.csv 20,2.0    # Bollinger Bands
+    fast-ta stochastic ohlc.csv 14,3,3     # Slow Stochastic (k=14, d=3, slow=3)
+")]
 pub struct Args {
     /// The indicator to compute
     #[command(subcommand)]
@@ -111,7 +132,7 @@ pub enum Command {
         /// Input CSV file
         input: String,
 
-        /// Parameters: fast_period,slow_period,signal_period (e.g., 12,26,9)
+        /// Parameters: `fast_period,slow_period,signal_period` (e.g., 12,26,9)
         #[arg(default_value = "12,26,9")]
         params: String,
 
@@ -130,7 +151,7 @@ pub enum Command {
         /// Input CSV file
         input: String,
 
-        /// Parameters: period,std_dev (e.g., 20,2.0)
+        /// Parameters: `period,std_dev` (e.g., 20,2.0)
         #[arg(default_value = "20,2.0")]
         params: String,
 
@@ -164,7 +185,7 @@ pub enum Command {
         /// Input CSV file
         input: String,
 
-        /// Parameters: k_period,d_period[,k_slowing] (e.g., 14,3 or 14,3,3)
+        /// Parameters: `k_period,d_period`[,`k_slowing`] (e.g., 14,3 or 14,3,3)
         #[arg(default_value = "14,3")]
         params: String,
 
@@ -243,11 +264,13 @@ pub enum Command {
 
 impl Args {
     /// Parse command-line arguments.
+    #[must_use] 
     pub fn parse_args() -> Self {
         Args::parse()
     }
 
     /// Get the input file path from the command.
+    #[must_use] 
     pub fn input_path(&self) -> &str {
         match &self.command {
             Command::Sma { input, .. } => input,
@@ -266,6 +289,7 @@ impl Args {
     }
 
     /// Get the output file path from the command, if specified.
+    #[must_use] 
     pub fn output_path(&self) -> Option<&str> {
         match &self.command {
             Command::Sma { output, .. } => output.as_deref(),
@@ -295,23 +319,32 @@ pub fn parse_macd_params(params: &str) -> Result<(usize, usize, usize)> {
         });
     }
 
-    let fast = parts[0].trim().parse::<usize>().map_err(|_| CliError::InvalidArgument {
-        argument: "fast_period".to_string(),
-        reason: format!("cannot parse '{}' as integer", parts[0]),
-        suggestion: Some("Use a positive integer like 12".to_string()),
-    })?;
+    let fast = parts[0]
+        .trim()
+        .parse::<usize>()
+        .map_err(|_| CliError::InvalidArgument {
+            argument: "fast_period".to_string(),
+            reason: format!("cannot parse '{}' as integer", parts[0]),
+            suggestion: Some("Use a positive integer like 12".to_string()),
+        })?;
 
-    let slow = parts[1].trim().parse::<usize>().map_err(|_| CliError::InvalidArgument {
-        argument: "slow_period".to_string(),
-        reason: format!("cannot parse '{}' as integer", parts[1]),
-        suggestion: Some("Use a positive integer like 26".to_string()),
-    })?;
+    let slow = parts[1]
+        .trim()
+        .parse::<usize>()
+        .map_err(|_| CliError::InvalidArgument {
+            argument: "slow_period".to_string(),
+            reason: format!("cannot parse '{}' as integer", parts[1]),
+            suggestion: Some("Use a positive integer like 26".to_string()),
+        })?;
 
-    let signal = parts[2].trim().parse::<usize>().map_err(|_| CliError::InvalidArgument {
-        argument: "signal_period".to_string(),
-        reason: format!("cannot parse '{}' as integer", parts[2]),
-        suggestion: Some("Use a positive integer like 9".to_string()),
-    })?;
+    let signal = parts[2]
+        .trim()
+        .parse::<usize>()
+        .map_err(|_| CliError::InvalidArgument {
+            argument: "signal_period".to_string(),
+            reason: format!("cannot parse '{}' as integer", parts[2]),
+            suggestion: Some("Use a positive integer like 9".to_string()),
+        })?;
 
     if fast == 0 || slow == 0 || signal == 0 {
         return Err(CliError::InvalidArgument {
@@ -332,7 +365,7 @@ pub fn parse_macd_params(params: &str) -> Result<(usize, usize, usize)> {
     Ok((fast, slow, signal))
 }
 
-/// Parse Bollinger parameters from string "period,std_dev".
+/// Parse Bollinger parameters from string "`period,std_dev`".
 pub fn parse_bollinger_params(params: &str) -> Result<(usize, f64)> {
     let parts: Vec<&str> = params.split(',').collect();
     if parts.len() != 2 {
@@ -343,17 +376,23 @@ pub fn parse_bollinger_params(params: &str) -> Result<(usize, f64)> {
         });
     }
 
-    let period = parts[0].trim().parse::<usize>().map_err(|_| CliError::InvalidArgument {
-        argument: "period".to_string(),
-        reason: format!("cannot parse '{}' as integer", parts[0]),
-        suggestion: Some("Use a positive integer like 20".to_string()),
-    })?;
+    let period = parts[0]
+        .trim()
+        .parse::<usize>()
+        .map_err(|_| CliError::InvalidArgument {
+            argument: "period".to_string(),
+            reason: format!("cannot parse '{}' as integer", parts[0]),
+            suggestion: Some("Use a positive integer like 20".to_string()),
+        })?;
 
-    let std_dev = parts[1].trim().parse::<f64>().map_err(|_| CliError::InvalidArgument {
-        argument: "std_dev".to_string(),
-        reason: format!("cannot parse '{}' as number", parts[1]),
-        suggestion: Some("Use a positive number like 2.0".to_string()),
-    })?;
+    let std_dev = parts[1]
+        .trim()
+        .parse::<f64>()
+        .map_err(|_| CliError::InvalidArgument {
+            argument: "std_dev".to_string(),
+            reason: format!("cannot parse '{}' as number", parts[1]),
+            suggestion: Some("Use a positive number like 2.0".to_string()),
+        })?;
 
     if period == 0 {
         return Err(CliError::InvalidArgument {
@@ -374,35 +413,46 @@ pub fn parse_bollinger_params(params: &str) -> Result<(usize, f64)> {
     Ok((period, std_dev))
 }
 
-/// Parse Stochastic parameters from string "k_period,d_period[,k_slowing]".
+/// Parse Stochastic parameters from string "`k_period,d_period`[,`k_slowing`]".
 pub fn parse_stochastic_params(params: &str) -> Result<(usize, usize, usize)> {
     let parts: Vec<&str> = params.split(',').collect();
     if parts.len() < 2 || parts.len() > 3 {
         return Err(CliError::InvalidArgument {
             argument: "params".to_string(),
             reason: format!("Stochastic requires 2-3 parameters, got {}", parts.len()),
-            suggestion: Some("Use format: k_period,d_period[,k_slowing] (e.g., 14,3 or 14,3,3)".to_string()),
+            suggestion: Some(
+                "Use format: k_period,d_period[,k_slowing] (e.g., 14,3 or 14,3,3)".to_string(),
+            ),
         });
     }
 
-    let k_period = parts[0].trim().parse::<usize>().map_err(|_| CliError::InvalidArgument {
-        argument: "k_period".to_string(),
-        reason: format!("cannot parse '{}' as integer", parts[0]),
-        suggestion: Some("Use a positive integer like 14".to_string()),
-    })?;
+    let k_period = parts[0]
+        .trim()
+        .parse::<usize>()
+        .map_err(|_| CliError::InvalidArgument {
+            argument: "k_period".to_string(),
+            reason: format!("cannot parse '{}' as integer", parts[0]),
+            suggestion: Some("Use a positive integer like 14".to_string()),
+        })?;
 
-    let d_period = parts[1].trim().parse::<usize>().map_err(|_| CliError::InvalidArgument {
-        argument: "d_period".to_string(),
-        reason: format!("cannot parse '{}' as integer", parts[1]),
-        suggestion: Some("Use a positive integer like 3".to_string()),
-    })?;
+    let d_period = parts[1]
+        .trim()
+        .parse::<usize>()
+        .map_err(|_| CliError::InvalidArgument {
+            argument: "d_period".to_string(),
+            reason: format!("cannot parse '{}' as integer", parts[1]),
+            suggestion: Some("Use a positive integer like 3".to_string()),
+        })?;
 
     let k_slowing = if parts.len() == 3 {
-        parts[2].trim().parse::<usize>().map_err(|_| CliError::InvalidArgument {
-            argument: "k_slowing".to_string(),
-            reason: format!("cannot parse '{}' as integer", parts[2]),
-            suggestion: Some("Use a positive integer like 3".to_string()),
-        })?
+        parts[2]
+            .trim()
+            .parse::<usize>()
+            .map_err(|_| CliError::InvalidArgument {
+                argument: "k_slowing".to_string(),
+                reason: format!("cannot parse '{}' as integer", parts[2]),
+                suggestion: Some("Use a positive integer like 3".to_string()),
+            })?
     } else {
         1 // Default to fast stochastic
     };
@@ -431,7 +481,12 @@ mod tests {
         // New order: input first, then period
         let args = Args::try_parse_from(["fast-ta", "sma", "input.csv", "20"]).unwrap();
         match args.command {
-            Command::Sma { period, input, output, .. } => {
+            Command::Sma {
+                period,
+                input,
+                output,
+                ..
+            } => {
                 assert_eq!(period, 20);
                 assert_eq!(input, "input.csv");
                 assert!(output.is_none());
@@ -442,9 +497,15 @@ mod tests {
 
     #[test]
     fn test_parse_ema_with_output() {
-        let args = Args::try_parse_from(["fast-ta", "ema", "input.csv", "20", "-o", "output.csv"]).unwrap();
+        let args = Args::try_parse_from(["fast-ta", "ema", "input.csv", "20", "-o", "output.csv"])
+            .unwrap();
         match args.command {
-            Command::Ema { period, input, output, .. } => {
+            Command::Ema {
+                period,
+                input,
+                output,
+                ..
+            } => {
                 assert_eq!(period, 20);
                 assert_eq!(input, "input.csv");
                 assert_eq!(output, Some("output.csv".to_string()));
@@ -597,7 +658,8 @@ mod tests {
 
     #[test]
     fn test_output_path_accessor() {
-        let args = Args::try_parse_from(["fast-ta", "sma", "test.csv", "20", "-o", "out.csv"]).unwrap();
+        let args =
+            Args::try_parse_from(["fast-ta", "sma", "test.csv", "20", "-o", "out.csv"]).unwrap();
         assert_eq!(args.output_path(), Some("out.csv"));
 
         let args2 = Args::try_parse_from(["fast-ta", "sma", "test.csv"]).unwrap();

@@ -17,31 +17,35 @@
 //!
 //! ## Trend Indicators
 //!
-//! - [`sma`] - Simple Moving Average: arithmetic mean over a rolling window
-//! - [`ema`] - Exponential Moving Average: weighted average emphasizing recent data
-//! - [`ema_wilder`] - Wilder's EMA: uses smoothing factor α = 1/period
-//! - [`macd`] - MACD: trend-following momentum using EMA differences
-//! - [`adx`] - Average Directional Index: measures trend strength (not direction)
-//! - [`donchian`] - Donchian Channels: price channels for breakout identification
+//! - [`sma()`] - Simple Moving Average: arithmetic mean over a rolling window
+//! - [`ema()`] - Exponential Moving Average: weighted average emphasizing recent data
+//! - [`ema_wilder()`] - Wilder's EMA: uses smoothing factor α = 1/period
+//! - [`wma()`] - Weighted Moving Average: linearly weighted average emphasizing recent data
+//! - [`dema()`] - Double Exponential Moving Average: reduced lag via double smoothing
+//! - [`tema()`] - Triple Exponential Moving Average: further reduced lag via triple smoothing
+//! - [`trima()`] - Triangular Moving Average: double-smoothed SMA for extra smoothness
+//! - [`macd()`] - MACD: trend-following momentum using EMA differences
+//! - [`adx()`] - Average Directional Index: measures trend strength (not direction)
+//! - [`donchian()`] - Donchian Channels: price channels for breakout identification
 //!
 //! ## Momentum Indicators
 //!
-//! - [`rsi`] - Relative Strength Index: measures speed and magnitude of price changes
-//! - [`stochastic`] - Stochastic Oscillator: compares closing price to price range (canonical API)
-//! - [`stochastic_fast`], [`stochastic_slow`], [`stochastic_full`] - Convenience variants
-//! - [`williams_r`] - Williams %R: momentum oscillator comparing close to high-low range
+//! - [`rsi()`] - Relative Strength Index: measures speed and magnitude of price changes
+//! - [`stochastic()`] - Stochastic Oscillator: compares closing price to price range (canonical API)
+//! - [`stochastic_fast()`], [`stochastic_slow()`], [`stochastic_full()`] - Convenience variants
+//! - [`williams_r()`] - Williams %R: momentum oscillator comparing close to high-low range
 //!
 //! ## Volatility Indicators
 //!
-//! - [`atr`] - Average True Range: measures market volatility using price ranges
-//! - [`true_range`] - True Range: single-period volatility component
-//! - [`bollinger`] - Bollinger Bands: price envelope based on standard deviation
-//! - [`rolling_stddev`] - Rolling Standard Deviation: statistical dispersion measure
+//! - [`atr()`] - Average True Range: measures market volatility using price ranges
+//! - [`true_range()`] - True Range: single-period volatility component
+//! - [`bollinger()`] - Bollinger Bands: price envelope based on standard deviation
+//! - [`rolling_stddev()`] - Rolling Standard Deviation: statistical dispersion measure
 //!
 //! ## Volume Indicators
 //!
-//! - [`obv`] - On-Balance Volume: cumulative volume flow to predict price changes
-//! - [`vwap`] - Volume Weighted Average Price: average price weighted by volume
+//! - [`obv()`] - On-Balance Volume: cumulative volume flow to predict price changes
+//! - [`vwap()`] - Volume Weighted Average Price: average price weighted by volume
 //!
 //! # Example
 //!
@@ -75,18 +79,54 @@
 //! - Insufficient data for the requested period
 //!   ([`InsufficientData`](crate::error::Error::InsufficientData))
 
+pub mod ad;
+pub mod adosc;
 pub mod adx;
+pub mod apo;
+pub mod aroon;
 pub mod atr;
 pub mod bollinger;
+pub mod bop;
+pub mod candlestick;
+pub mod cci;
+pub mod cmo;
+pub mod dema;
 pub mod donchian;
+pub mod dx;
 pub mod ema;
+pub mod ht_core;
+pub mod ht_dcperiod;
+pub mod ht_dcphase;
+pub mod ht_phasor;
+pub mod ht_sine;
+pub mod ht_trendline;
+pub mod ht_trendmode;
+pub mod kama;
 pub mod macd;
+pub mod mama;
+pub mod mavp;
+pub mod mfi;
+pub mod midpoint;
+pub mod midprice;
+pub mod mom;
 pub mod obv;
+pub mod price_transform;
+pub mod roc;
 pub mod rsi;
+pub mod sar;
+pub mod sarext;
 pub mod sma;
+pub mod statistics;
 pub mod stochastic;
+pub mod stochrsi;
+pub mod t3;
+pub mod tema;
+pub mod trima;
+pub mod trix;
+pub mod ultosc;
 pub mod vwap;
 pub mod williams_r;
+pub mod wma;
 
 // Re-export indicator functions for convenient access.
 //
@@ -107,6 +147,15 @@ pub use bollinger::{
     rolling_stddev_into, Bollinger, BollingerOutput,
 };
 
+// Double Exponential Moving Average
+pub use dema::{dema, dema_into, dema_lookback, dema_min_len};
+
+// Triple Exponential Moving Average
+pub use tema::{tema, tema_into, tema_lookback, tema_min_len};
+
+// Triangular Moving Average
+pub use trima::{trima, trima_into, trima_lookback, trima_min_len};
+
 // Donchian Channels
 pub use donchian::{donchian, donchian_into, donchian_lookback, donchian_min_len, DonchianOutput};
 
@@ -116,10 +165,19 @@ pub use ema::{
     ema_with_alpha_into,
 };
 
+// KAMA (Kaufman Adaptive Moving Average)
+pub use kama::{kama, kama_full, kama_full_into, kama_into, kama_lookback, kama_min_len};
+
 // MACD
 pub use macd::{
     macd, macd_into, macd_line_lookback, macd_min_len, macd_signal_lookback, Macd, MacdOutput,
 };
+
+// MIDPOINT
+pub use midpoint::{midpoint, midpoint_into, midpoint_lookback, midpoint_min_len};
+
+// MIDPRICE
+pub use midprice::{midprice, midprice_into, midprice_lookback, midprice_min_len};
 
 // OBV (On-Balance Volume)
 pub use obv::{obv, obv_into, obv_lookback, obv_min_len};
@@ -142,3 +200,126 @@ pub use vwap::{vwap, vwap_into, vwap_lookback, vwap_min_len};
 
 // Williams %R
 pub use williams_r::{williams_r, williams_r_into, williams_r_lookback, williams_r_min_len};
+
+// Weighted Moving Average
+pub use wma::{wma, wma_into, wma_lookback, wma_min_len};
+
+// T3 (Tillson T3 Moving Average)
+pub use t3::{t3, t3_full, t3_full_into, t3_into, t3_lookback, t3_min_len};
+
+// SAR (Parabolic Stop and Reverse)
+pub use sar::{sar, sar_full, sar_full_into, sar_into, sar_lookback, sar_min_len};
+
+// SAREXT (Extended Parabolic SAR)
+pub use sarext::{
+    sarext, sarext_full, sarext_full_into, sarext_into, sarext_lookback, sarext_min_len,
+    SarExtParams,
+};
+
+// HT_TRENDLINE (Hilbert Transform - Instantaneous Trendline)
+pub use ht_trendline::{
+    ht_trendline, ht_trendline_into, ht_trendline_lookback, ht_trendline_min_len,
+};
+
+// MAMA (MESA Adaptive Moving Average)
+pub use mama::{
+    mama, mama_full, mama_full_into, mama_into, mama_lookback, mama_min_len, MamaOutput,
+};
+
+// MOM (Momentum)
+pub use mom::{mom, mom_into, mom_lookback, mom_min_len};
+
+// ROC family (Rate of Change)
+pub use roc::{
+    roc, roc_into, roc_lookback, roc_min_len, rocp, rocp_into, rocp_lookback, rocp_min_len, rocr,
+    rocr100, rocr100_into, rocr100_lookback, rocr100_min_len, rocr_into, rocr_lookback,
+    rocr_min_len,
+};
+
+// APO (Absolute Price Oscillator) and PPO (Percentage Price Oscillator)
+pub use apo::{apo, apo_into, apo_lookback, apo_min_len, ppo, ppo_into, ppo_lookback, ppo_min_len};
+
+// BOP (Balance of Power)
+pub use bop::{bop, bop_into, bop_lookback, bop_min_len};
+
+// AROON
+pub use aroon::{aroon, aroon_into, aroon_lookback, aroon_min_len, AroonOutput};
+
+// AROONOSC (Aroon Oscillator)
+pub use aroon::{aroonosc, aroonosc_into, aroonosc_lookback, aroonosc_min_len};
+
+// CCI (Commodity Channel Index)
+pub use cci::{cci, cci_into, cci_lookback, cci_min_len};
+
+// CMO (Chande Momentum Oscillator)
+pub use cmo::{cmo, cmo_into, cmo_lookback, cmo_min_len};
+
+// MFI (Money Flow Index)
+pub use mfi::{mfi, mfi_into, mfi_lookback, mfi_min_len};
+
+// STOCHRSI (Stochastic RSI)
+pub use stochrsi::{
+    stochrsi, stochrsi_d_lookback, stochrsi_default, stochrsi_into, stochrsi_k_lookback,
+    stochrsi_min_len, StochRsiOutput,
+};
+
+// TRIX
+pub use trix::{trix, trix_into, trix_lookback, trix_min_len};
+
+// ULTOSC (Ultimate Oscillator)
+pub use ultosc::{ultosc, ultosc_default, ultosc_into, ultosc_lookback, ultosc_min_len};
+
+// DX family (Directional Movement indicators)
+pub use dx::{
+    adxr, adxr_into, adxr_lookback, adxr_min_len, dm_lookback, dm_min_len, dx, dx_into,
+    dx_lookback, dx_min_len, minus_dm, minus_dm_into, plus_dm, plus_dm_into,
+};
+
+// AD (Chaikin Accumulation/Distribution Line)
+pub use ad::{ad, ad_into, ad_lookback, ad_min_len};
+
+// ADOSC (Chaikin A/D Oscillator)
+pub use adosc::{adosc, adosc_default, adosc_into, adosc_lookback, adosc_min_len};
+
+// Hilbert Transform Core
+pub use ht_core::{hilbert_transform, ht_lookback, ht_min_len, HilbertState};
+
+// HT_DCPERIOD (Hilbert Transform - Dominant Cycle Period)
+pub use ht_dcperiod::{ht_dcperiod, ht_dcperiod_into, ht_dcperiod_lookback, ht_dcperiod_min_len};
+
+// HT_DCPHASE (Hilbert Transform - Dominant Cycle Phase)
+pub use ht_dcphase::{ht_dcphase, ht_dcphase_into, ht_dcphase_lookback, ht_dcphase_min_len};
+
+// HT_PHASOR (Hilbert Transform - Phasor Components)
+pub use ht_phasor::{
+    ht_phasor, ht_phasor_into, ht_phasor_lookback, ht_phasor_min_len, HtPhasorOutput,
+};
+
+// HT_SINE (Hilbert Transform - SineWave)
+pub use ht_sine::{ht_sine, ht_sine_into, ht_sine_lookback, ht_sine_min_len, HtSineOutput};
+
+// HT_TRENDMODE (Hilbert Transform - Trend vs Cycle Mode)
+pub use ht_trendmode::{
+    ht_trendmode, ht_trendmode_into, ht_trendmode_lookback, ht_trendmode_min_len,
+};
+
+// MAVP (Moving Average Variable Period)
+pub use mavp::{mavp, mavp_default, mavp_into, mavp_lookback, mavp_min_len};
+
+// Price Transform Indicators
+pub use price_transform::{
+    avgprice, avgprice_into, avgprice_lookback, avgprice_min_len, medprice, medprice_into,
+    medprice_lookback, medprice_min_len, typprice, typprice_into, typprice_lookback,
+    typprice_min_len, wclprice, wclprice_into, wclprice_lookback, wclprice_min_len,
+};
+
+// Statistical Functions
+pub use statistics::{
+    beta, beta_into, beta_lookback, beta_min_len, correl, correl_into, correl_lookback,
+    correl_min_len, linearreg, linearreg_angle, linearreg_angle_into, linearreg_angle_lookback,
+    linearreg_angle_min_len, linearreg_intercept, linearreg_intercept_into,
+    linearreg_intercept_lookback, linearreg_intercept_min_len, linearreg_into, linearreg_lookback,
+    linearreg_min_len, linearreg_slope, linearreg_slope_into, linearreg_slope_lookback,
+    linearreg_slope_min_len, tsf, tsf_into, tsf_lookback, tsf_min_len, var, var_into, var_lookback,
+    var_min_len,
+};

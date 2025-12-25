@@ -156,7 +156,10 @@ pub struct BollingerOutput<T> {
 /// use fast_ta::indicators::bollinger::bollinger;
 ///
 /// // Standard Bollinger Bands with period 20 and 2 standard deviations
-/// let data: Vec<f64> = (0..50).map(|x| 100.0 + (x as f64 * 0.1)).collect();
+/// let mut data: Vec<f64> = Vec::with_capacity(50);
+/// for x in 0..50 {
+///     data.push(100.0 + (x as f64 * 0.1));
+/// }
 /// let result = bollinger(&data, 20, 2.0).unwrap();
 ///
 /// // Check that we have valid values after warmup
@@ -698,7 +701,7 @@ fn compute_variance<T: Float>(sum_sq: T, sum: T, period: T) -> T {
 
 /// Bollinger Bands configuration with fluent builder API.
 ///
-/// Provides sensible defaults (period=20, std_dev=2.0) and fluent setters
+/// Provides sensible defaults (period=20, `std_dev=2.0`) and fluent setters
 /// for customization. Implements `Default` for zero-config usage per
 /// Gravity Check 1.1.
 ///
@@ -758,7 +761,7 @@ impl Bollinger {
     ///
     /// Default: 2.0
     #[must_use]
-    pub fn std_dev(mut self, std_dev: f64) -> Self {
+    pub const fn std_dev(mut self, std_dev: f64) -> Self {
         self.std_dev = std_dev;
         self
     }
@@ -841,7 +844,9 @@ mod tests {
 
     #[test]
     fn test_bollinger_basic() {
-        let data = vec![20.0_f64, 21.0, 22.0, 21.5, 22.5, 23.0, 22.0, 21.0, 20.5, 21.5];
+        let data = vec![
+            20.0_f64, 21.0, 22.0, 21.5, 22.5, 23.0, 22.0, 21.0, 20.5, 21.5,
+        ];
         let result = bollinger(&data, 5, 2.0).unwrap();
 
         assert_eq!(result.middle.len(), 10);
@@ -1094,7 +1099,10 @@ mod tests {
         let data = vec![1.0_f64, 2.0, 3.0];
         let result = bollinger(&data, 0, 2.0);
 
-        assert!(matches!(result, Err(Error::InvalidPeriod { period: 0, .. })));
+        assert!(matches!(
+            result,
+            Err(Error::InvalidPeriod { period: 0, .. })
+        ));
     }
 
     #[test]
@@ -1228,7 +1236,10 @@ mod tests {
         let data = vec![1.0_f64, 2.0, 3.0];
         let result = rolling_stddev(&data, 0);
 
-        assert!(matches!(result, Err(Error::InvalidPeriod { period: 0, .. })));
+        assert!(matches!(
+            result,
+            Err(Error::InvalidPeriod { period: 0, .. })
+        ));
     }
 
     // ==================== Consistency Tests ====================
@@ -1257,7 +1268,9 @@ mod tests {
         // The middle band should be exactly equal to the SMA
         use crate::indicators::sma::sma;
 
-        let data = vec![20.0_f64, 21.0, 22.0, 21.5, 22.5, 23.0, 22.0, 21.0, 20.5, 21.5];
+        let data = vec![
+            20.0_f64, 21.0, 22.0, 21.5, 22.5, 23.0, 22.0, 21.0, 20.5, 21.5,
+        ];
         let bb = bollinger(&data, 5, 2.0).unwrap();
         let sma_result = sma(&data, 5).unwrap();
 
@@ -1362,7 +1375,9 @@ mod tests {
     #[test]
     fn test_bollinger_middle_within_bands() {
         // Middle should always be between upper and lower
-        let data: Vec<f64> = (0..100).map(|x| (x as f64 * 0.1).cos() * 20.0 + 100.0).collect();
+        let data: Vec<f64> = (0..100)
+            .map(|x| (x as f64 * 0.1).cos() * 20.0 + 100.0)
+            .collect();
         let result = bollinger(&data, 20, 2.0).unwrap();
 
         for i in 19..100 {
@@ -1375,7 +1390,9 @@ mod tests {
     fn test_bollinger_higher_volatility_wider_bands() {
         // More volatile data should have wider bands
         let low_vol: Vec<f64> = (0..50).map(|x| 100.0 + (x as f64 * 0.01).sin()).collect();
-        let high_vol: Vec<f64> = (0..50).map(|x| 100.0 + (x as f64 * 0.01).sin() * 10.0).collect();
+        let high_vol: Vec<f64> = (0..50)
+            .map(|x| 100.0 + (x as f64 * 0.01).sin() * 10.0)
+            .collect();
 
         let result_low = bollinger(&low_vol, 10, 2.0).unwrap();
         let result_high = bollinger(&high_vol, 10, 2.0).unwrap();

@@ -5,20 +5,19 @@
 //! These benchmarks measure throughput for each indicator across various
 //! input sizes to validate O(n) complexity and establish performance baselines.
 
+#![allow(clippy::cast_precision_loss)]
+#![allow(clippy::unreadable_literal)]
+#![allow(clippy::similar_names)]
+#![allow(clippy::needless_range_loop)]
+#![allow(clippy::cast_possible_truncation)]
+#![allow(clippy::items_after_statements)]
+#![allow(clippy::many_single_char_names)]
+#![allow(clippy::type_complexity)]
+
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use fast_ta::indicators::{
-    adx::adx,
-    atr::atr,
-    bollinger::bollinger,
-    donchian::donchian,
-    ema::ema,
-    macd::macd,
-    obv::obv,
-    rsi::rsi,
-    sma::sma,
-    stochastic::stochastic,
-    vwap::vwap,
-    williams_r::williams_r,
+    adx::adx, atr::atr, bollinger::bollinger, donchian::donchian, ema::ema, macd::macd, obv::obv,
+    rsi::rsi, sma::sma, stochastic::stochastic, vwap::vwap, williams_r::williams_r,
 };
 
 /// Generate synthetic OHLCV data for benchmarks.
@@ -74,7 +73,7 @@ fn bench_sma(c: &mut Criterion) {
         let data = generate_series(size);
         group.throughput(Throughput::Elements(size as u64));
         group.bench_with_input(BenchmarkId::from_parameter(size), &data, |b, data| {
-            b.iter(|| sma(black_box(data), black_box(20)))
+            b.iter(|| sma(black_box(data), black_box(20)));
         });
     }
     group.finish();
@@ -86,7 +85,7 @@ fn bench_ema(c: &mut Criterion) {
         let data = generate_series(size);
         group.throughput(Throughput::Elements(size as u64));
         group.bench_with_input(BenchmarkId::from_parameter(size), &data, |b, data| {
-            b.iter(|| ema(black_box(data), black_box(20)))
+            b.iter(|| ema(black_box(data), black_box(20)));
         });
     }
     group.finish();
@@ -98,7 +97,7 @@ fn bench_rsi(c: &mut Criterion) {
         let data = generate_series(size);
         group.throughput(Throughput::Elements(size as u64));
         group.bench_with_input(BenchmarkId::from_parameter(size), &data, |b, data| {
-            b.iter(|| rsi(black_box(data), black_box(14)))
+            b.iter(|| rsi(black_box(data), black_box(14)));
         });
     }
     group.finish();
@@ -110,7 +109,7 @@ fn bench_macd(c: &mut Criterion) {
         let data = generate_series(size);
         group.throughput(Throughput::Elements(size as u64));
         group.bench_with_input(BenchmarkId::from_parameter(size), &data, |b, data| {
-            b.iter(|| macd(black_box(data), black_box(12), black_box(26), black_box(9)))
+            b.iter(|| macd(black_box(data), black_box(12), black_box(26), black_box(9)));
         });
     }
     group.finish();
@@ -122,7 +121,7 @@ fn bench_bollinger(c: &mut Criterion) {
         let data = generate_series(size);
         group.throughput(Throughput::Elements(size as u64));
         group.bench_with_input(BenchmarkId::from_parameter(size), &data, |b, data| {
-            b.iter(|| bollinger(black_box(data), black_box(20), black_box(2.0)))
+            b.iter(|| bollinger(black_box(data), black_box(20), black_box(2.0)));
         });
     }
     group.finish();
@@ -160,7 +159,7 @@ fn bench_stochastic(c: &mut Criterion) {
                         black_box(3),
                         black_box(3),
                     )
-                })
+                });
             },
         );
     }
@@ -190,7 +189,7 @@ fn bench_williams_r(c: &mut Criterion) {
             BenchmarkId::from_parameter(size),
             &(high, low, close),
             |b, (h, l, c)| {
-                b.iter(|| williams_r(black_box(h), black_box(l), black_box(c), black_box(14)))
+                b.iter(|| williams_r(black_box(h), black_box(l), black_box(c), black_box(14)));
             },
         );
     }
@@ -234,7 +233,7 @@ fn bench_vwap(c: &mut Criterion) {
             BenchmarkId::from_parameter(size),
             &(high, low, close, volume),
             |b, (h, l, c, v)| {
-                b.iter(|| vwap(black_box(h), black_box(l), black_box(c), black_box(v)))
+                b.iter(|| vwap(black_box(h), black_box(l), black_box(c), black_box(v)));
             },
         );
     }

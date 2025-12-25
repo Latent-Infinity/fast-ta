@@ -45,7 +45,7 @@
 //!   contains NaN, the output is NaN. NaN propagation takes priority over the
 //!   flat-price fallback.
 //! - **Rolling Extrema**: Uses monotonic deque for O(n) computation when
-//!   k_period ≥ 25, naive O(n×k) for smaller periods (per E04 findings).
+//!   `k_period` ≥ 25, naive O(n×k) for smaller periods (per E04 findings).
 //!
 //! # Example
 //!
@@ -77,7 +77,7 @@ use crate::traits::SeriesElement;
 /// controls the smoothing applied to %K before computing %D:
 ///
 /// - **Fast Stochastic**: `k_slowing = 1` (default). %K = raw stochastic, no smoothing.
-/// - **Slow Stochastic**: `k_slowing > 1`. %K is smoothed with SMA(k_slowing) before %D.
+/// - **Slow Stochastic**: `k_slowing > 1`. %K is smoothed with `SMA(k_slowing)` before %D.
 ///
 /// # Arguments
 ///
@@ -739,7 +739,7 @@ fn validate_stochastic_full_inputs<T: SeriesElement>(
 ///
 /// Uses a fused O(n×k) approach computing both highest high and lowest low in
 /// a single pass through each window. This is more efficient than two separate
-/// passes through rolling_max and rolling_min.
+/// passes through `rolling_max` and `rolling_min`.
 fn compute_raw_k<T: SeriesElement>(
     high: &[T],
     low: &[T],
@@ -865,7 +865,7 @@ fn compute_sma_of_series<T: SeriesElement>(
 
 /// Stochastic Oscillator configuration with fluent builder API.
 ///
-/// Provides sensible defaults (k_period=14, d_period=3, k_slowing=1) and fluent
+/// Provides sensible defaults (`k_period=14`, `d_period=3`, `k_slowing=1`) and fluent
 /// setters for customization. Implements `Default` for zero-config usage per
 /// Gravity Check 1.1.
 ///
@@ -1004,7 +1004,14 @@ impl Stochastic {
         low: &[T],
         close: &[T],
     ) -> Result<StochasticOutput<T>> {
-        stochastic(high, low, close, self.k_period, self.d_period, self.k_slowing)
+        stochastic(
+            high,
+            low,
+            close,
+            self.k_period,
+            self.d_period,
+            self.k_slowing,
+        )
     }
 
     /// Computes the Stochastic Oscillator into a pre-allocated output struct.
@@ -1026,7 +1033,15 @@ impl Stochastic {
         close: &[T],
         output: &mut StochasticOutput<T>,
     ) -> Result<(usize, usize)> {
-        stochastic_into(high, low, close, self.k_period, self.d_period, self.k_slowing, output)
+        stochastic_into(
+            high,
+            low,
+            close,
+            self.k_period,
+            self.d_period,
+            self.k_slowing,
+            output,
+        )
     }
 
     /// Returns the %K period.
@@ -1091,7 +1106,9 @@ mod tests {
 
     #[test]
     fn test_stochastic_fast_basic() {
-        let high = vec![10.0_f64, 11.0, 12.0, 11.5, 12.5, 13.0, 12.0, 11.0, 10.5, 11.5];
+        let high = vec![
+            10.0_f64, 11.0, 12.0, 11.5, 12.5, 13.0, 12.0, 11.0, 10.5, 11.5,
+        ];
         let low = vec![9.0, 10.0, 11.0, 10.5, 11.5, 12.0, 11.0, 10.0, 9.5, 10.5];
         let close = vec![9.5, 10.5, 11.5, 11.0, 12.0, 12.5, 11.5, 10.5, 10.0, 11.0];
 
@@ -1199,7 +1216,9 @@ mod tests {
 
     #[test]
     fn test_stochastic_slow_basic() {
-        let high = vec![10.0_f64, 11.0, 12.0, 11.5, 12.5, 13.0, 12.0, 11.0, 10.5, 11.5];
+        let high = vec![
+            10.0_f64, 11.0, 12.0, 11.5, 12.5, 13.0, 12.0, 11.0, 10.5, 11.5,
+        ];
         let low = vec![9.0, 10.0, 11.0, 10.5, 11.5, 12.0, 11.0, 10.0, 9.5, 10.5];
         let close = vec![9.5, 10.5, 11.5, 11.0, 12.0, 12.5, 11.5, 10.5, 10.0, 11.0];
 
@@ -1224,8 +1243,12 @@ mod tests {
     #[test]
     fn test_stochastic_slow_smoother_than_fast() {
         // Slow stochastic should be smoother (less volatile) than fast
-        let high: Vec<f64> = (0..20).map(|i| 100.0 + (i as f64) + (i % 3) as f64).collect();
-        let low: Vec<f64> = (0..20).map(|i| 95.0 + (i as f64) - (i % 3) as f64).collect();
+        let high: Vec<f64> = (0..20)
+            .map(|i| 100.0 + (i as f64) + (i % 3) as f64)
+            .collect();
+        let low: Vec<f64> = (0..20)
+            .map(|i| 95.0 + (i as f64) - (i % 3) as f64)
+            .collect();
         let close: Vec<f64> = (0..20).map(|i| 97.5 + (i as f64)).collect();
 
         let fast = stochastic_fast(&high, &low, &close, 5, 3).unwrap();
@@ -1346,7 +1369,10 @@ mod tests {
         let close = vec![0.75, 1.75, 2.75];
 
         let result = stochastic_fast(&high, &low, &close, 0, 3);
-        assert!(matches!(result, Err(Error::InvalidPeriod { period: 0, .. })));
+        assert!(matches!(
+            result,
+            Err(Error::InvalidPeriod { period: 0, .. })
+        ));
     }
 
     #[test]
@@ -1356,7 +1382,10 @@ mod tests {
         let close = vec![0.75, 1.75, 2.75];
 
         let result = stochastic_fast(&high, &low, &close, 3, 0);
-        assert!(matches!(result, Err(Error::InvalidPeriod { period: 0, .. })));
+        assert!(matches!(
+            result,
+            Err(Error::InvalidPeriod { period: 0, .. })
+        ));
     }
 
     #[test]
@@ -1535,20 +1564,21 @@ mod tests {
     #[test]
     fn test_stochastic_k_in_bounds() {
         // %K should always be between 0 and 100
-        let high: Vec<f64> = (0..50).map(|i| 100.0 + (i as f64) + ((i % 7) as f64)).collect();
-        let low: Vec<f64> = (0..50).map(|i| 95.0 + (i as f64) - ((i % 5) as f64)).collect();
-        let close: Vec<f64> = (0..50).map(|i| 97.5 + (i as f64) + ((i % 3) as f64) * 0.5).collect();
+        let high: Vec<f64> = (0..50)
+            .map(|i| 100.0 + (i as f64) + ((i % 7) as f64))
+            .collect();
+        let low: Vec<f64> = (0..50)
+            .map(|i| 95.0 + (i as f64) - ((i % 5) as f64))
+            .collect();
+        let close: Vec<f64> = (0..50)
+            .map(|i| 97.5 + (i as f64) + ((i % 3) as f64) * 0.5)
+            .collect();
 
         let result = stochastic_fast(&high, &low, &close, 14, 3).unwrap();
 
         for (i, &k) in result.k.iter().enumerate() {
             if !k.is_nan() {
-                assert!(
-                    k >= 0.0 && k <= 100.0,
-                    "k[{}] = {} is out of bounds",
-                    i,
-                    k
-                );
+                assert!(k >= 0.0 && k <= 100.0, "k[{}] = {} is out of bounds", i, k);
             }
         }
     }
@@ -1556,20 +1586,21 @@ mod tests {
     #[test]
     fn test_stochastic_d_in_bounds() {
         // %D should always be between 0 and 100
-        let high: Vec<f64> = (0..50).map(|i| 100.0 + (i as f64) + ((i % 7) as f64)).collect();
-        let low: Vec<f64> = (0..50).map(|i| 95.0 + (i as f64) - ((i % 5) as f64)).collect();
-        let close: Vec<f64> = (0..50).map(|i| 97.5 + (i as f64) + ((i % 3) as f64) * 0.5).collect();
+        let high: Vec<f64> = (0..50)
+            .map(|i| 100.0 + (i as f64) + ((i % 7) as f64))
+            .collect();
+        let low: Vec<f64> = (0..50)
+            .map(|i| 95.0 + (i as f64) - ((i % 5) as f64))
+            .collect();
+        let close: Vec<f64> = (0..50)
+            .map(|i| 97.5 + (i as f64) + ((i % 3) as f64) * 0.5)
+            .collect();
 
         let result = stochastic_fast(&high, &low, &close, 14, 3).unwrap();
 
         for (i, &d) in result.d.iter().enumerate() {
             if !d.is_nan() {
-                assert!(
-                    d >= 0.0 && d <= 100.0,
-                    "d[{}] = {} is out of bounds",
-                    i,
-                    d
-                );
+                assert!(d >= 0.0 && d <= 100.0, "d[{}] = {} is out of bounds", i, d);
             }
         }
     }
@@ -1671,7 +1702,8 @@ mod tests {
                         let low: Vec<f64> = (0..len).map(|x| x as f64).collect();
                         let close: Vec<f64> = (0..len).map(|x| (x + 5) as f64).collect();
 
-                        let result = stochastic_fast(&high, &low, &close, k_period, d_period).unwrap();
+                        let result =
+                            stochastic_fast(&high, &low, &close, k_period, d_period).unwrap();
                         assert_eq!(result.k.len(), len);
                         assert_eq!(result.d.len(), len);
                     }
@@ -1770,9 +1802,7 @@ mod tests {
         // In a downtrend, %K should be low (close near low)
         let high: Vec<f64> = (0..10).map(|i| 100.0 - (i as f64) * 2.0).collect();
         let low: Vec<f64> = (0..10).map(|i| 95.0 - (i as f64) * 2.0).collect();
-        let close: Vec<f64> = (0..10)
-            .map(|i| f64::from(i).mul_add(-2.0, 96.0))
-            .collect(); // Close near low
+        let close: Vec<f64> = (0..10).map(|i| f64::from(i).mul_add(-2.0, 96.0)).collect(); // Close near low
 
         let result = stochastic_fast(&high, &low, &close, 5, 3).unwrap();
 

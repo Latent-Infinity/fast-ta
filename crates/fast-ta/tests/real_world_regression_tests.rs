@@ -16,6 +16,13 @@
 //!
 //! Per PRD §7.7: "Synthetic fixtures test edge cases, but real-world data tests robustness."
 
+#![allow(clippy::needless_range_loop)]
+#![allow(clippy::cast_precision_loss)]
+#![allow(clippy::similar_names)]
+#![allow(clippy::unreadable_literal)]
+#![allow(clippy::float_cmp)]
+#![allow(clippy::manual_clamp)]
+
 use rand::Rng;
 use rand::SeedableRng;
 use rand_chacha::ChaCha8Rng;
@@ -170,8 +177,7 @@ fn verify_nan_count(result: &[f64], expected_nan_count: usize, indicator_name: &
     let actual_nan_count = result.iter().filter(|x| x.is_nan()).count();
     assert_eq!(
         actual_nan_count, expected_nan_count,
-        "{}: expected {} NaN values, got {}",
-        indicator_name, expected_nan_count, actual_nan_count
+        "{indicator_name}: expected {expected_nan_count} NaN values, got {actual_nan_count}"
     );
 
     // Verify NaN values are at the beginning
@@ -179,17 +185,12 @@ fn verify_nan_count(result: &[f64], expected_nan_count: usize, indicator_name: &
         if i < expected_nan_count {
             assert!(
                 val.is_nan(),
-                "{}: expected NaN at index {}, got {}",
-                indicator_name,
-                i,
-                val
+                "{indicator_name}: expected NaN at index {i}, got {val}"
             );
         } else {
             assert!(
                 !val.is_nan(),
-                "{}: unexpected NaN at index {} (past lookback)",
-                indicator_name,
-                i
+                "{indicator_name}: unexpected NaN at index {i} (past lookback)"
             );
         }
     }
@@ -201,12 +202,7 @@ fn verify_bounds(result: &[f64], min: f64, max: f64, indicator_name: &str) {
         if !val.is_nan() {
             assert!(
                 val >= min && val <= max,
-                "{}: value {} at index {} is out of bounds [{}, {}]",
-                indicator_name,
-                val,
-                i,
-                min,
-                max
+                "{indicator_name}: value {val} at index {i} is out of bounds [{min}, {max}]"
             );
         }
     }
@@ -220,7 +216,10 @@ fn regression_data_generation_deterministic() {
     let data1 = generate_synthetic_ohlcv(SEED, 100);
     let data2 = generate_synthetic_ohlcv(SEED, 100);
 
-    assert_eq!(data1.close, data2.close, "Data generation should be deterministic");
+    assert_eq!(
+        data1.close, data2.close,
+        "Data generation should be deterministic"
+    );
     assert_eq!(data1.high, data2.high);
     assert_eq!(data1.low, data2.low);
     assert_eq!(data1.open, data2.open);
@@ -234,37 +233,32 @@ fn regression_data_ohlc_relationships() {
         // High should be >= max(open, close)
         assert!(
             data.high[i] >= data.open[i] && data.high[i] >= data.close[i],
-            "High should be >= open and close at index {}",
-            i
+            "High should be >= open and close at index {i}"
         );
 
         // Low should be <= min(open, close)
         assert!(
             data.low[i] <= data.open[i] && data.low[i] <= data.close[i],
-            "Low should be <= open and close at index {}",
-            i
+            "Low should be <= open and close at index {i}"
         );
 
         // High >= Low
         assert!(
             data.high[i] >= data.low[i],
-            "High should be >= Low at index {}",
-            i
+            "High should be >= Low at index {i}"
         );
 
         // All prices positive
-        assert!(data.open[i] > 0.0, "Open should be positive at index {}", i);
-        assert!(data.high[i] > 0.0, "High should be positive at index {}", i);
-        assert!(data.low[i] > 0.0, "Low should be positive at index {}", i);
+        assert!(data.open[i] > 0.0, "Open should be positive at index {i}");
+        assert!(data.high[i] > 0.0, "High should be positive at index {i}");
+        assert!(data.low[i] > 0.0, "Low should be positive at index {i}");
         assert!(
             data.close[i] > 0.0,
-            "Close should be positive at index {}",
-            i
+            "Close should be positive at index {i}"
         );
         assert!(
             data.volume[i] > 0.0,
-            "Volume should be positive at index {}",
-            i
+            "Volume should be positive at index {i}"
         );
     }
 }
@@ -278,13 +272,22 @@ fn regression_sma_typical_periods() {
     for period in [5, 10, 20, 50, 100, 200] {
         let result = sma(&data.close, period).unwrap();
 
-        assert_eq!(result.len(), data.close.len(), "SMA({}) output length", period);
-        verify_nan_count(&result, sma_lookback(period), &format!("SMA({})", period));
+        assert_eq!(
+            result.len(),
+            data.close.len(),
+            "SMA({period}) output length"
+        );
+        verify_nan_count(&result, sma_lookback(period), &format!("SMA({period})"));
 
         // SMA should be within the price range
-        let min_price = data.close.iter().cloned().fold(f64::INFINITY, f64::min);
-        let max_price = data.close.iter().cloned().fold(f64::NEG_INFINITY, f64::max);
-        verify_bounds(&result, min_price * 0.5, max_price * 1.5, &format!("SMA({})", period));
+        let min_price = data.close.iter().copied().fold(f64::INFINITY, f64::min);
+        let max_price = data.close.iter().copied().fold(f64::NEG_INFINITY, f64::max);
+        verify_bounds(
+            &result,
+            min_price * 0.5,
+            max_price * 1.5,
+            &format!("SMA({period})"),
+        );
     }
 }
 
@@ -297,8 +300,12 @@ fn regression_ema_typical_periods() {
     for period in [5, 12, 26, 50, 100, 200] {
         let result = ema(&data.close, period).unwrap();
 
-        assert_eq!(result.len(), data.close.len(), "EMA({}) output length", period);
-        verify_nan_count(&result, ema_lookback(period), &format!("EMA({})", period));
+        assert_eq!(
+            result.len(),
+            data.close.len(),
+            "EMA({period}) output length"
+        );
+        verify_nan_count(&result, ema_lookback(period), &format!("EMA({period})"));
     }
 }
 
@@ -312,13 +319,12 @@ fn regression_ema_wilder_typical_periods() {
         assert_eq!(
             result.len(),
             data.close.len(),
-            "EMA_Wilder({}) output length",
-            period
+            "EMA_Wilder({period}) output length"
         );
         verify_nan_count(
             &result,
             ema_lookback(period),
-            &format!("EMA_Wilder({})", period),
+            &format!("EMA_Wilder({period})"),
         );
     }
 }
@@ -332,11 +338,15 @@ fn regression_rsi_typical_periods() {
     for period in [7, 14, 21] {
         let result = rsi(&data.close, period).unwrap();
 
-        assert_eq!(result.len(), data.close.len(), "RSI({}) output length", period);
-        verify_nan_count(&result, rsi_lookback(period), &format!("RSI({})", period));
+        assert_eq!(
+            result.len(),
+            data.close.len(),
+            "RSI({period}) output length"
+        );
+        verify_nan_count(&result, rsi_lookback(period), &format!("RSI({period})"));
 
         // RSI must be in [0, 100]
-        verify_bounds(&result, 0.0, 100.0, &format!("RSI({})", period));
+        verify_bounds(&result, 0.0, 100.0, &format!("RSI({period})"));
     }
 }
 
@@ -353,7 +363,11 @@ fn regression_macd_standard() {
     let result = macd(&data.close, fast, slow, signal).unwrap();
 
     assert_eq!(result.macd_line.len(), data.close.len(), "MACD line length");
-    assert_eq!(result.signal_line.len(), data.close.len(), "Signal line length");
+    assert_eq!(
+        result.signal_line.len(),
+        data.close.len(),
+        "Signal line length"
+    );
     assert_eq!(result.histogram.len(), data.close.len(), "Histogram length");
 
     // Verify NaN counts
@@ -378,8 +392,7 @@ fn regression_macd_standard() {
         let expected = result.macd_line[i] - result.signal_line[i];
         assert!(
             (result.histogram[i] - expected).abs() < 1e-10,
-            "Histogram should equal MACD - Signal at index {}",
-            i
+            "Histogram should equal MACD - Signal at index {i}"
         );
     }
 }
@@ -393,11 +406,15 @@ fn regression_atr_typical_periods() {
     for period in [7, 14, 21] {
         let result = atr(&data.high, &data.low, &data.close, period).unwrap();
 
-        assert_eq!(result.len(), data.close.len(), "ATR({}) output length", period);
-        verify_nan_count(&result, atr_lookback(period), &format!("ATR({})", period));
+        assert_eq!(
+            result.len(),
+            data.close.len(),
+            "ATR({period}) output length"
+        );
+        verify_nan_count(&result, atr_lookback(period), &format!("ATR({period})"));
 
         // ATR must be non-negative
-        verify_bounds(&result, 0.0, f64::INFINITY, &format!("ATR({})", period));
+        verify_bounds(&result, 0.0, f64::INFINITY, &format!("ATR({period})"));
     }
 }
 
@@ -425,9 +442,21 @@ fn regression_bollinger_typical() {
 
     let result = bollinger(&data.close, period, num_std).unwrap();
 
-    assert_eq!(result.middle.len(), data.close.len(), "Bollinger middle length");
-    assert_eq!(result.upper.len(), data.close.len(), "Bollinger upper length");
-    assert_eq!(result.lower.len(), data.close.len(), "Bollinger lower length");
+    assert_eq!(
+        result.middle.len(),
+        data.close.len(),
+        "Bollinger middle length"
+    );
+    assert_eq!(
+        result.upper.len(),
+        data.close.len(),
+        "Bollinger upper length"
+    );
+    assert_eq!(
+        result.lower.len(),
+        data.close.len(),
+        "Bollinger lower length"
+    );
 
     let expected_nan = bollinger_lookback(period);
     verify_nan_count(&result.middle, expected_nan, "Bollinger middle");
@@ -438,13 +467,11 @@ fn regression_bollinger_typical() {
     for i in expected_nan..data.close.len() {
         assert!(
             result.upper[i] >= result.middle[i],
-            "Upper >= Middle at index {}",
-            i
+            "Upper >= Middle at index {i}"
         );
         assert!(
             result.middle[i] >= result.lower[i],
-            "Middle >= Lower at index {}",
-            i
+            "Middle >= Lower at index {i}"
         );
     }
 }
@@ -463,11 +490,7 @@ fn regression_stochastic_typical() {
     assert_eq!(result.k.len(), data.close.len(), "Stochastic %K length");
     assert_eq!(result.d.len(), data.close.len(), "Stochastic %D length");
 
-    verify_nan_count(
-        &result.k,
-        stochastic_k_lookback(k_period),
-        "Stochastic %K",
-    );
+    verify_nan_count(&result.k, stochastic_k_lookback(k_period), "Stochastic %K");
     verify_nan_count(
         &result.d,
         stochastic_d_lookback(k_period, d_period),
@@ -492,25 +515,23 @@ fn regression_rolling_extrema_typical() {
         assert_eq!(
             max_result.len(),
             data.high.len(),
-            "Rolling max({}) output length",
-            period
+            "Rolling max({period}) output length"
         );
         assert_eq!(
             min_result.len(),
             data.low.len(),
-            "Rolling min({}) output length",
-            period
+            "Rolling min({period}) output length"
         );
 
         verify_nan_count(
             &max_result,
             rolling_extrema_lookback(period),
-            &format!("Rolling max({})", period),
+            &format!("Rolling max({period})"),
         );
         verify_nan_count(
             &min_result,
             rolling_extrema_lookback(period),
-            &format!("Rolling min({})", period),
+            &format!("Rolling min({period})"),
         );
 
         // Rolling max should be >= current value
@@ -518,13 +539,11 @@ fn regression_rolling_extrema_typical() {
         for i in rolling_extrema_lookback(period)..data.high.len() {
             assert!(
                 max_result[i] >= data.high[i],
-                "Rolling max >= current high at index {}",
-                i
+                "Rolling max >= current high at index {i}"
             );
             assert!(
                 min_result[i] <= data.low[i],
-                "Rolling min <= current low at index {}",
-                i
+                "Rolling min <= current low at index {i}"
             );
         }
     }
@@ -578,8 +597,7 @@ fn regression_typical_trading_workflow() {
 
     assert!(
         valid_count > DATA_POINTS - 100,
-        "Should have many valid combined signals: {}",
-        valid_count
+        "Should have many valid combined signals: {valid_count}"
     );
 }
 
@@ -592,7 +610,7 @@ fn regression_chained_indicators() {
     let rsi_14 = rsi(&data.close, 14).unwrap();
 
     // Get only the valid (non-NaN) values for the second RSI
-    let valid_rsi: Vec<f64> = rsi_14.iter().filter(|x| !x.is_nan()).cloned().collect();
+    let valid_rsi: Vec<f64> = rsi_14.iter().filter(|x| !x.is_nan()).copied().collect();
 
     if valid_rsi.len() >= 15 {
         // RSI of RSI (smoothed RSI)

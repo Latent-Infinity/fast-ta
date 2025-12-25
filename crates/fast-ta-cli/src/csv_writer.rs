@@ -46,7 +46,7 @@ impl OutputDest {
 /// # Arguments
 ///
 /// * `output` - The indicator output values
-/// * `header` - Column header name (e.g., "sma_20")
+/// * `header` - Column header name (e.g., "`sma_20`")
 /// * `dates` - Optional date column to include
 /// * `lookback` - Number of initial NaN values to skip
 /// * `dest` - Output destination (stdout or file)
@@ -66,9 +66,9 @@ pub fn write_single_output(
 
     // Write header
     if dates.is_some() {
-        writeln!(writer, "date,{}", header)?;
+        writeln!(writer, "date,{header}")?;
     } else {
-        writeln!(writer, "{}", header)?;
+        writeln!(writer, "{header}")?;
     }
 
     // Write data rows, skipping lookback period
@@ -96,7 +96,7 @@ pub fn write_single_output(
 ///
 /// # Arguments
 ///
-/// * `columns` - Vector of (header_name, values) pairs
+/// * `columns` - Vector of (`header_name`, values) pairs
 /// * `dates` - Optional date column to include
 /// * `lookback` - Number of initial NaN values to skip (uses max lookback)
 /// * `dest` - Output destination
@@ -121,7 +121,7 @@ pub fn write_multi_output(
     if dates.is_some() {
         write!(writer, "date")?;
         for (name, _) in columns {
-            write!(writer, ",{}", name)?;
+            write!(writer, ",{name}")?;
         }
         writeln!(writer)?;
     } else {
@@ -145,7 +145,7 @@ pub fn write_multi_output(
             if i < values.len() && !values[i].is_nan() {
                 write!(writer, "{}{}", prefix, values[i])?;
             } else {
-                write!(writer, "{}", prefix)?; // Empty cell for NaN or out-of-bounds
+                write!(writer, "{prefix}")?; // Empty cell for NaN or out-of-bounds
             }
         }
         writeln!(writer)?;
@@ -234,7 +234,7 @@ mod tests {
         let lines: Vec<&str> = content.lines().collect();
 
         assert_eq!(lines[0], "macd,signal,histogram");
-        assert!(lines[1].contains("1")); // First data row after lookback
+        assert!(lines[1].contains('1')); // First data row after lookback
         assert_eq!(lines.len(), 4); // Header + 3 data rows
 
         std::fs::remove_file(&temp_path).ok();

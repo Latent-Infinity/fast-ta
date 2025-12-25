@@ -47,7 +47,6 @@ use std::collections::VecDeque;
 use crate::error::{Error, Result};
 use crate::traits::SeriesElement;
 
-
 /// Returns the lookback period for rolling max/min.
 ///
 /// The lookback is the number of NaN values at the start of the output.
@@ -637,7 +636,10 @@ pub fn rolling_min_into<T: SeriesElement>(
 /// assert!((result.max[2] - 4.0).abs() < 1e-10); // max = 4
 /// assert!((result.min[2] - 1.0).abs() < 1e-10); // min = 1
 /// ```
-pub fn rolling_extrema<T: SeriesElement>(data: &[T], period: usize) -> Result<RollingExtremaOutput<T>> {
+pub fn rolling_extrema<T: SeriesElement>(
+    data: &[T],
+    period: usize,
+) -> Result<RollingExtremaOutput<T>> {
     // Validate inputs
     if period == 0 {
         return Err(Error::InvalidPeriod {
@@ -1226,7 +1228,10 @@ mod tests {
     fn test_rolling_max_zero_period() {
         let data = vec![1.0_f64, 2.0, 3.0];
         let result = rolling_max(&data, 0);
-        assert!(matches!(result, Err(Error::InvalidPeriod { period: 0, .. })));
+        assert!(matches!(
+            result,
+            Err(Error::InvalidPeriod { period: 0, .. })
+        ));
     }
 
     #[test]
@@ -1254,7 +1259,10 @@ mod tests {
     fn test_rolling_min_zero_period() {
         let data = vec![1.0_f64, 2.0, 3.0];
         let result = rolling_min(&data, 0);
-        assert!(matches!(result, Err(Error::InvalidPeriod { period: 0, .. })));
+        assert!(matches!(
+            result,
+            Err(Error::InvalidPeriod { period: 0, .. })
+        ));
     }
 
     #[test]

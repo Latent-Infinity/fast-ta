@@ -724,7 +724,10 @@ mod tests {
         let data = vec![1.0_f64, 2.0, 3.0];
         let result = ema(&data, 0);
 
-        assert!(matches!(result, Err(Error::InvalidPeriod { period: 0, .. })));
+        assert!(matches!(
+            result,
+            Err(Error::InvalidPeriod { period: 0, .. })
+        ));
     }
 
     #[test]
@@ -755,7 +758,10 @@ mod tests {
         let data = vec![1.0_f64, 2.0, 3.0];
         let result = ema_wilder(&data, 0);
 
-        assert!(matches!(result, Err(Error::InvalidPeriod { period: 0, .. })));
+        assert!(matches!(
+            result,
+            Err(Error::InvalidPeriod { period: 0, .. })
+        ));
     }
 
     // ==================== ema_into Tests ====================
@@ -1060,9 +1066,15 @@ mod tests {
     #[test]
     fn test_alpha_zero_period_error() {
         let result: Result<f64> = compute_standard_alpha(0);
-        assert!(matches!(result, Err(Error::InvalidPeriod { period: 0, .. })));
+        assert!(matches!(
+            result,
+            Err(Error::InvalidPeriod { period: 0, .. })
+        ));
 
         let result: Result<f64> = compute_wilder_alpha(0);
-        assert!(matches!(result, Err(Error::InvalidPeriod { period: 0, .. })));
+        assert!(matches!(
+            result,
+            Err(Error::InvalidPeriod { period: 0, .. })
+        ));
     }
 }

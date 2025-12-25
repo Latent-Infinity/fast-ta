@@ -150,7 +150,11 @@ pub const fn donchian_min_len(period: usize) -> usize {
 /// }
 /// ```
 #[must_use = "this returns a Result with Donchian output, which should be used"]
-pub fn donchian<T: SeriesElement>(high: &[T], low: &[T], period: usize) -> Result<DonchianOutput<T>> {
+pub fn donchian<T: SeriesElement>(
+    high: &[T],
+    low: &[T],
+    period: usize,
+) -> Result<DonchianOutput<T>> {
     validate_inputs(high, low, period)?;
 
     let n = high.len();
@@ -379,9 +383,21 @@ mod tests {
 
         // Values from index 2 onwards should be valid
         for i in 2..result.upper.len() {
-            assert!(!result.upper[i].is_nan(), "Upper at {} should not be NaN", i);
-            assert!(!result.middle[i].is_nan(), "Middle at {} should not be NaN", i);
-            assert!(!result.lower[i].is_nan(), "Lower at {} should not be NaN", i);
+            assert!(
+                !result.upper[i].is_nan(),
+                "Upper at {} should not be NaN",
+                i
+            );
+            assert!(
+                !result.middle[i].is_nan(),
+                "Middle at {} should not be NaN",
+                i
+            );
+            assert!(
+                !result.lower[i].is_nan(),
+                "Lower at {} should not be NaN",
+                i
+            );
         }
     }
 
@@ -408,7 +424,11 @@ mod tests {
         for i in 0..result.upper.len() {
             assert!(approx_eq(result.upper[i], high[i], EPSILON));
             assert!(approx_eq(result.lower[i], low[i], EPSILON));
-            assert!(approx_eq(result.middle[i], (high[i] + low[i]) / 2.0, EPSILON));
+            assert!(approx_eq(
+                result.middle[i],
+                (high[i] + low[i]) / 2.0,
+                EPSILON
+            ));
         }
     }
 
@@ -473,10 +493,16 @@ mod tests {
         // Upper = current high
         // Lower = low from (period-1) bars ago
         for i in 2..result.upper.len() {
-            assert!(approx_eq(result.upper[i], high[i], EPSILON),
-                "Upper should track high at {}", i);
-            assert!(approx_eq(result.lower[i], low[i - 2], EPSILON),
-                "Lower should be oldest low at {}", i);
+            assert!(
+                approx_eq(result.upper[i], high[i], EPSILON),
+                "Upper should track high at {}",
+                i
+            );
+            assert!(
+                approx_eq(result.lower[i], low[i - 2], EPSILON),
+                "Lower should be oldest low at {}",
+                i
+            );
         }
     }
 
@@ -484,16 +510,28 @@ mod tests {
 
     #[test]
     fn test_donchian_upper_gte_middle_gte_lower() {
-        let high: Vec<f64> = (0..30).map(|i| 100.0 + 10.0 * ((i as f64) * 0.5).sin()).collect();
+        let high: Vec<f64> = (0..30)
+            .map(|i| 100.0 + 10.0 * ((i as f64) * 0.5).sin())
+            .collect();
         let low: Vec<f64> = high.iter().map(|h| h - 3.0).collect();
 
         let result = donchian(&high, &low, 5).unwrap();
 
         for i in 4..result.upper.len() {
-            assert!(result.upper[i] >= result.middle[i],
-                "Upper should be >= middle at {}: {} >= {}", i, result.upper[i], result.middle[i]);
-            assert!(result.middle[i] >= result.lower[i],
-                "Middle should be >= lower at {}: {} >= {}", i, result.middle[i], result.lower[i]);
+            assert!(
+                result.upper[i] >= result.middle[i],
+                "Upper should be >= middle at {}: {} >= {}",
+                i,
+                result.upper[i],
+                result.middle[i]
+            );
+            assert!(
+                result.middle[i] >= result.lower[i],
+                "Middle should be >= lower at {}: {} >= {}",
+                i,
+                result.middle[i],
+                result.lower[i]
+            );
         }
     }
 
@@ -514,7 +552,10 @@ mod tests {
         let low = vec![9.0_f64; 10];
 
         let result = donchian(&high, &low, 0);
-        assert!(matches!(result, Err(Error::InvalidPeriod { period: 0, .. })));
+        assert!(matches!(
+            result,
+            Err(Error::InvalidPeriod { period: 0, .. })
+        ));
     }
 
     #[test]
@@ -557,7 +598,8 @@ mod tests {
         let mut middle = vec![0.0_f64; 8];
         let mut lower = vec![0.0_f64; 8];
 
-        let valid_count = donchian_into(&high, &low, 3, &mut upper, &mut middle, &mut lower).unwrap();
+        let valid_count =
+            donchian_into(&high, &low, 3, &mut upper, &mut middle, &mut lower).unwrap();
 
         assert_eq!(valid_count, 6); // 8 - 2 = 6 valid values
 
@@ -591,12 +633,27 @@ mod tests {
         donchian_into(&high, &low, 3, &mut upper, &mut middle, &mut lower).unwrap();
 
         for i in 0..8 {
-            assert!(approx_eq(result1.upper[i], upper[i], EPSILON),
-                "Upper mismatch at {}: {} vs {}", i, result1.upper[i], upper[i]);
-            assert!(approx_eq(result1.middle[i], middle[i], EPSILON),
-                "Middle mismatch at {}: {} vs {}", i, result1.middle[i], middle[i]);
-            assert!(approx_eq(result1.lower[i], lower[i], EPSILON),
-                "Lower mismatch at {}: {} vs {}", i, result1.lower[i], lower[i]);
+            assert!(
+                approx_eq(result1.upper[i], upper[i], EPSILON),
+                "Upper mismatch at {}: {} vs {}",
+                i,
+                result1.upper[i],
+                upper[i]
+            );
+            assert!(
+                approx_eq(result1.middle[i], middle[i], EPSILON),
+                "Middle mismatch at {}: {} vs {}",
+                i,
+                result1.middle[i],
+                middle[i]
+            );
+            assert!(
+                approx_eq(result1.lower[i], lower[i], EPSILON),
+                "Lower mismatch at {}: {} vs {}",
+                i,
+                result1.lower[i],
+                lower[i]
+            );
         }
     }
 
@@ -643,14 +700,19 @@ mod tests {
 
             let upper_nan_count = result.upper.iter().filter(|x| x.is_nan()).count();
             let expected = period - 1;
-            assert_eq!(upper_nan_count, expected,
-                "Expected {} NaN values for period {}, got {}", expected, period, upper_nan_count);
+            assert_eq!(
+                upper_nan_count, expected,
+                "Expected {} NaN values for period {}, got {}",
+                expected, period, upper_nan_count
+            );
         }
     }
 
     #[test]
     fn test_donchian_upper_always_gte_high_in_window() {
-        let high: Vec<f64> = (0..50).map(|i| 100.0 + 10.0 * ((i as f64) * 0.3).sin()).collect();
+        let high: Vec<f64> = (0..50)
+            .map(|i| 100.0 + 10.0 * ((i as f64) * 0.3).sin())
+            .collect();
         let low: Vec<f64> = high.iter().map(|h| h - 3.0).collect();
 
         let period = 5;
@@ -659,16 +721,23 @@ mod tests {
         for i in (period - 1)..high.len() {
             // Upper should be >= any high in the window
             for j in (i + 1 - period)..=i {
-                assert!(result.upper[i] >= high[j],
+                assert!(
+                    result.upper[i] >= high[j],
                     "Upper at {} ({}) should be >= high at {} ({})",
-                    i, result.upper[i], j, high[j]);
+                    i,
+                    result.upper[i],
+                    j,
+                    high[j]
+                );
             }
         }
     }
 
     #[test]
     fn test_donchian_lower_always_lte_low_in_window() {
-        let high: Vec<f64> = (0..50).map(|i| 100.0 + 10.0 * ((i as f64) * 0.3).sin()).collect();
+        let high: Vec<f64> = (0..50)
+            .map(|i| 100.0 + 10.0 * ((i as f64) * 0.3).sin())
+            .collect();
         let low: Vec<f64> = high.iter().map(|h| h - 3.0).collect();
 
         let period = 5;
@@ -677,9 +746,14 @@ mod tests {
         for i in (period - 1)..low.len() {
             // Lower should be <= any low in the window
             for j in (i + 1 - period)..=i {
-                assert!(result.lower[i] <= low[j],
+                assert!(
+                    result.lower[i] <= low[j],
                     "Lower at {} ({}) should be <= low at {} ({})",
-                    i, result.lower[i], j, low[j]);
+                    i,
+                    result.lower[i],
+                    j,
+                    low[j]
+                );
             }
         }
     }
@@ -699,29 +773,47 @@ mod tests {
         let result = donchian(&high, &low, 5).unwrap();
 
         // Upper band should expand with the breakout
-        assert!(result.upper[8] > result.upper[7],
-            "Upper should expand on breakout");
-        assert!(result.upper[9] > result.upper[7],
-            "Upper should remain elevated");
+        assert!(
+            result.upper[8] > result.upper[7],
+            "Upper should expand on breakout"
+        );
+        assert!(
+            result.upper[9] > result.upper[7],
+            "Upper should remain elevated"
+        );
     }
 
     #[test]
     fn test_donchian_channel_width_measures_volatility() {
         // Wider channels indicate higher volatility
-        let high_volatile: Vec<f64> = (0..20).map(|i| 100.0 + 10.0 * ((i as f64) * 0.5).sin()).collect();
+        let high_volatile: Vec<f64> = (0..20)
+            .map(|i| 100.0 + 10.0 * ((i as f64) * 0.5).sin())
+            .collect();
         let low_volatile: Vec<f64> = high_volatile.iter().map(|h| h - 5.0).collect();
 
-        let high_calm: Vec<f64> = (0..20).map(|i| 100.0 + 2.0 * ((i as f64) * 0.5).sin()).collect();
+        let high_calm: Vec<f64> = (0..20)
+            .map(|i| 100.0 + 2.0 * ((i as f64) * 0.5).sin())
+            .collect();
         let low_calm: Vec<f64> = high_calm.iter().map(|h| h - 1.0).collect();
 
         let result_volatile = donchian(&high_volatile, &low_volatile, 5).unwrap();
         let result_calm = donchian(&high_calm, &low_calm, 5).unwrap();
 
         // Average channel width should be larger for volatile data
-        let avg_width_volatile: f64 = (10..20).map(|i| result_volatile.upper[i] - result_volatile.lower[i]).sum::<f64>() / 10.0;
-        let avg_width_calm: f64 = (10..20).map(|i| result_calm.upper[i] - result_calm.lower[i]).sum::<f64>() / 10.0;
+        let avg_width_volatile: f64 = (10..20)
+            .map(|i| result_volatile.upper[i] - result_volatile.lower[i])
+            .sum::<f64>()
+            / 10.0;
+        let avg_width_calm: f64 = (10..20)
+            .map(|i| result_calm.upper[i] - result_calm.lower[i])
+            .sum::<f64>()
+            / 10.0;
 
-        assert!(avg_width_volatile > avg_width_calm,
-            "Volatile market should have wider channels: {} vs {}", avg_width_volatile, avg_width_calm);
+        assert!(
+            avg_width_volatile > avg_width_calm,
+            "Volatile market should have wider channels: {} vs {}",
+            avg_width_volatile,
+            avg_width_calm
+        );
     }
 }
