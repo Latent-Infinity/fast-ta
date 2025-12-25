@@ -150,13 +150,13 @@ pub struct MacdOutput<T: SeriesElement> {
 impl<T: SeriesElement> MacdOutput<T> {
     /// Returns the length of the output vectors.
     #[must_use]
-    pub fn len(&self) -> usize {
+    pub const fn len(&self) -> usize {
         self.macd_line.len()
     }
 
     /// Returns true if the output vectors are empty.
     #[must_use]
-    pub fn is_empty(&self) -> bool {
+    pub const fn is_empty(&self) -> bool {
         self.macd_line.is_empty()
     }
 

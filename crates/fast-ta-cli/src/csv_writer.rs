@@ -134,10 +134,10 @@ pub fn write_multi_output(
 
     // Write data rows, skipping lookback period
     for i in lookback..len {
-        if let Some(dates) = dates {
-            if i < dates.len() {
-                write!(writer, "{}", dates[i])?;
-            }
+        if let Some(dates) = dates
+            && i < dates.len()
+        {
+            write!(writer, "{}", dates[i])?;
         }
 
         for (idx, (_, values)) in columns.iter().enumerate() {

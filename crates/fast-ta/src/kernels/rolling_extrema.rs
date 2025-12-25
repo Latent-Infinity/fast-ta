@@ -179,8 +179,7 @@ impl<T: SeriesElement> MonotonicDeque<T> {
         }
 
         // Remove elements from the back that are smaller than or equal to current value
-        while !self.deque.is_empty() {
-            let back_idx = *self.deque.back().unwrap();
+        while let Some(&back_idx) = self.deque.back() {
             let back_val = data[back_idx];
             if back_val.is_nan() || value >= back_val {
                 self.deque.pop_back();
@@ -219,8 +218,7 @@ impl<T: SeriesElement> MonotonicDeque<T> {
         }
 
         // Remove elements from the back that are larger than or equal to current value
-        while !self.deque.is_empty() {
-            let back_idx = *self.deque.back().unwrap();
+        while let Some(&back_idx) = self.deque.back() {
             let back_val = data[back_idx];
             if back_val.is_nan() || value <= back_val {
                 self.deque.pop_back();
@@ -242,8 +240,7 @@ impl<T: SeriesElement> MonotonicDeque<T> {
         // Only remove if we've seen at least `period` elements
         if current_index >= self.period {
             let window_start = current_index + 1 - self.period;
-            while !self.deque.is_empty() {
-                let front_idx = *self.deque.front().unwrap();
+            while let Some(&front_idx) = self.deque.front() {
                 if front_idx < window_start {
                     self.deque.pop_front();
                 } else {

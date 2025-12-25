@@ -4,8 +4,8 @@ members = ["crates/fast-ta", "crates/fast-ta-cli", "crates/fast-ta-python"]
 
 [workspace.package]
 version = "0.1.0"
-edition = "2021"
-rust-version = "1.75"
+edition = "2024"
+rust-version = "1.90"
 license = "MIT"
 repository = "https://github.com/latenty-infinity/fast-ta"
 authors = ["Latenty Infinity"]

@@ -121,7 +121,7 @@ fn generate_synthetic_ohlcv(seed: u64, num_points: usize) -> OhlcvData {
         let gap_probability = 0.05;
         let open_price = if i == 0 {
             current_price
-        } else if rng.gen::<f64>() < gap_probability {
+        } else if rng.r#gen::<f64>() < gap_probability {
             // Gap open
             let gap_size = rng.gen_range(-0.03..0.03);
             current_price * (1.0 + gap_size)
